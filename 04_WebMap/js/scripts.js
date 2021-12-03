@@ -48,7 +48,7 @@ map.on('load',function(){
   // define a 'source' for your point dataset
   map.addSource('nyu_data',{
     'type':'geojson',
-    'data': "https://github.com/jennahgosciak/nyu_ownership/blob/main/03_Output/nyu_test.geojson"
+    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/main/04_WebMap/data/nyu_test.geojson"
   });
   // add a new layer with your points
   map.addLayer({
