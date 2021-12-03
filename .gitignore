@@ -9,8 +9,8 @@
 *.tif
 *.psb
 *.qgz
-*.jpg.points
-*.wld
+00_Georeferencing/IMG_9293.jpg.points
+00_Georeferencing/IMG_9293.wld
 
 # History files
 .Rhistory
