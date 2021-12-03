@@ -34,6 +34,7 @@ library(lubridate)
 library(fs)
 library(sf)
 library(vroom)
+library(leaflet)
 
 # DB Connection
 con <- dbConnect(Postgres(),
@@ -122,15 +123,36 @@ nyu_pluto_app
 #   st_write(dsn = path(out, "nyu_allyrs.geojson"), driver = "GeoJSON",
 #            append = F)
 
-check_names <- map_dfr(tblnames, ~check_extract(con, .))
-check_names
+check_names <- map_dfr(tblnames, ~check_extract(con, .)) %>% 
+  unique()
+
+check_names %>% 
+  write.xlsx(path(out, "check_names.xlsx"), overwrite = T)
+
+check_names %>% 
+  anti_join(nyu_pluto_app, by = "ownername") %>% 
+  write.xlsx(path(out, "check_unmg_names.xlsx"), overwrite = T)
 
 nyu_pluto_app %>% 
-  st_transform(epsg = 4326) %>% 
-  select(c("ownername")) %>% 
+  st_transform(4326) %>% 
+  select(c("ownername", "year"), -"geom_poly") %>% 
+  st_as_sf("geom_poly")   %>%
   st_write(dsn = path(out, "nyu_test.geojson"), driver = "GeoJSON",
            append = F)
 ```
+
+```{r}
+map_interactive <- nyu_pluto_app %>% 
+  st_transform(4326) %>% 
+  leaflet() %>% 
+  addProviderTiles(provider = "CartoDB.Positron") %>% 
+  addPolygons(stroke = F,
+              smoothFactor = 0.5,
+              opacity = 1,
+              fillOpacity = 0.7)
+map_interactive
+```
+
 
 ```{r}
 tbl(con, "acris_document_control_codes")

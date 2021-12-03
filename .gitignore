@@ -3,6 +3,14 @@
 *.xlsx
 *.html
 *.zip
+*.jpg
+*.png
+*.heic
+*.tif
+*.psb
+*.qgz
+*.jpg.points
+*.wld
 
 # History files
 .Rhistory
