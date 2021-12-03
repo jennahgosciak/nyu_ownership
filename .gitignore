@@ -6,6 +6,7 @@
 *.jpg
 *.png
 *.heic
+*.tif
 
 # History files
 .Rhistory
