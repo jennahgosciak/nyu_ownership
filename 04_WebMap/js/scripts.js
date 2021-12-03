@@ -44,12 +44,11 @@ function filterBy(year) {
   document.getElementById('year').textContent = years[years.indexOf(year)];
 }
 
-
 map.on('load',function(){
   // define a 'source' for your point dataset
   map.addSource('nyu_data',{
     'type':'geojson',
-    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_test.geojson"
+    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_test.geojson";
   });
   // add a new layer with your points
   map.addLayer({
