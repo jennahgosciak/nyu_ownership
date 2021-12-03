@@ -11,6 +11,7 @@
 *.qgz
 *.jpg.points
 *.wld
+
 # History files
 .Rhistory
 .Rapp.history
