@@ -1,0 +1,160 @@
+---
+title: "Exploratory analysis"
+author: "Jennah Gosciak"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(inputFile,
+  encoding=encoding,
+  output_file="01_analysis.html")})
+output:
+  html_document:
+    toc: true
+    theme: paper
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = F, warning = F,
+                      fig.width = 6, fig.height = 10)
+```
+
+```{r, setup, include = F}
+# Setup
+library(renv)
+library(tidyverse)
+library(janitor)
+library(magrittr)
+library(eeptools)
+library(assertr)
+library(readr)
+library(openxlsx)
+library(DBI)
+library(dplyr)
+library(dbplyr)
+library(RPostgres)
+library(lubridate)
+library(fs)
+library(sf)
+library(vroom)
+
+# DB Connection
+con <- dbConnect(Postgres(),
+  user = "furmandata",
+  password = rstudioapi::askForPassword(),
+  host = "fcdata.c7h93yqbqnvu.us-east-1.rds.amazonaws.com",
+  port = 5432,
+  dbname = "fcdata",
+  bigint = "integer"
+)
+
+source("99_common.R")
+out <- "03_Output"
+inp <- "01_Input"
+```
+
+```{r}
+tbls <- dbListTables(con)
+
+tbls[str_detect(tbls, "acris")]
+
+check_extract <- function(con, tblname) {
+    df1 <- tbl(con, tblname) %>%
+    mutate(ownername = str_replace_all(ownername, "[:punct:]", "")) %>%
+    filter(str_detect(ownername, "NEW YORK UNI")) %>%
+    select(ownername) %>%
+    as_tibble() %>%
+    unique()
+
+  df2 <- tbl(con, tblname) %>%
+    mutate(ownername = str_replace_all(ownername, "[:punct:]", "")) %>%
+    filter(str_detect(ownername, "NYU")) %>%
+    select(ownername) %>%
+    as_tibble() %>%
+    unique()
+  
+  bind_rows(df1, df2)
+}
+
+extract_nyu <- function(con, tblname, yr, out_path = out) {
+  print(paste0("Loading table for: ", tblname))
+  
+  nyu_pluto <- tryCatch(st_read(con, query = paste0(
+    "SELECT * FROM ", tblname,
+    " WHERE ownername ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)'
+                  AND ownername != 'NYU, SOON KEAT'"
+  )) %>%
+    mutate(year = yr) %>%
+    mutate(across(c("zipcode", "schooldist"), ~as.character(.))),
+  error=function(cond) {
+            message(paste("Does not work:", tblname))
+            return(NA)}
+  )
+
+  nyu_pluto %>%
+    nrow()
+
+  nyu_pluto %>%
+    tablist_qc(ownername)
+
+  return(nyu_pluto)
+}
+
+tbls <- dbListTables(con)
+tbls[str_detect(tbls, "pluto") & str_detect(tbls, "09")]
+
+tblnames <- c("mappluto_02b", "mappluto_03c", "mappluto_04c", "mappluto_05d",
+               "mappluto_06c", "mappluto_07c", "mappluto_09v2", 
+              "mappluto_10v2", "mappluto_11v2",
+               "mappluto_12v2", "mappluto_13v2", "mappluto_14v2", "mappluto_15v1",
+               "mappluto_16v2", "mappluto_17v1_1", "mappluto_18v2", "mappluto_19v2",
+               "mappluto_20v1", "mappluto_21v3")
+
+nyu_pluto_full <- map2(tblnames, c(2002:2007, 2009:2021), ~extract_nyu(con, .x, .y))
+nyu_pluto_app <- bind_rows(nyu_pluto_full)
+nyu_pluto_app
+
+# nyu_21 <- extract_nyu(con, "mappluto_21v3", 2021)
+# nyu_21
+# 
+# nyu_21 %>% 
+#   st_write(dsn = path(out, "nyu_21.geojson"), driver = "GeoJSON",
+#            append = F)
+# 
+# nyu_pluto_app %>% 
+#   st_write(dsn = path(out, "nyu_allyrs.geojson"), driver = "GeoJSON",
+#            append = F)
+
+check_names <- map_dfr(tblnames, ~check_extract(con, .))
+check_names
+
+nyu_pluto_app %>% 
+  st_transform(epsg = 4326) %>% 
+  select(c("ownername")) %>% 
+  st_write(dsn = path(out, "nyu_test.geojson"), driver = "GeoJSON",
+           append = F)
+```
+
+```{r}
+tbl(con, "acris_document_control_codes")
+## Load acris data
+acris_codes <- readr::read_csv(path(inp, "ACRIS_-_Document_Control_Codes.csv"))  %>% 
+  filter(`CLASS CODE DESCRIPTION` == "DEEDS AND OTHER CONVEYANCES") %>% 
+  pull(`DOC. TYPE`)
+acris_codes
+
+acris_codes
+
+nyu_acris <- dbGetQuery(con, paste0("SELECT p.*, m.* FROM acris_parties as p
+                  INNER JOIN acris_master as m on (p.document_id = m.document_id)
+                  LEFT JOIN acris_document_control_codes as d on (m.doc_type = d.doc_type)
+                  WHERE p.name ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)'
+                  AND p.name NOT IN ('NYU, SOON KEAT', 
+                                  'OK NYU PARK, AS ADMINISTRATOR OF ESTATE',
+                                  'YOON, SOOK NYU CHUNG')
+                                  AND 
+                  d.class_code_description = 'DEEDS AND OTHER CONVEYANCES'"))
+nyu_acris
+
+nyu_acris %>% 
+  tablist_qc(name)
+```
+
+
