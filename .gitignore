@@ -3,6 +3,9 @@
 *.xlsx
 *.html
 *.zip
+*.jpg
+*.png
+*.heic
 
 # History files
 .Rhistory
