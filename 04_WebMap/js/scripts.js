@@ -4,9 +4,9 @@
 console.log('Loaded map.js')
 
 // your mapbox token
-mapboxgl.accessToken = 'pk.eyJ1Ijoiamdvc2NpYWsiLCJhIjoiY2t3cG5vanB5MGVwMjJuczJrMXI4MzlsdSJ9.TS0iy75tU2Dam19zeMjv7Q'
+maplibregl.accessToken = 'pk.eyJ1Ijoiamdvc2NpYWsiLCJhIjoiY2t3cG5vanB5MGVwMjJuczJrMXI4MzlsdSJ9.TS0iy75tU2Dam19zeMjv7Q'
 
-var map = new mapboxgl.Map({
+var map = new maplibregl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/dark-v10',
     center: [-73.9973, 40.7309],
