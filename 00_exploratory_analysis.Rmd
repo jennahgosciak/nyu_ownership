@@ -171,7 +171,29 @@ full_check %>%
 ```
 
 ```{r, exp pluto}
+# load cpi from bls
+# method from: https://qrc.depaul.edu/oelguntillman/Winter12/Notes/7%20-%20CPI%20Notes.htm
+cpi <- readxl::read_xlsx(path(inp, "r-cpi-u-rs-allitems.xlsx"),
+                         skip = 5)
+cpi
+
+cpi_2020 <- cpi %>% 
+  filter(YEAR == 2020) %>% 
+  pull(AVG)
+
+conversion_factors <- cpi %>% 
+  filter(YEAR != 1977) %>% 
+  mutate(conv = cpi_2020/AVG) %>% 
+  rename(year = YEAR) %>% 
+  select(year, conv)
+
+conversion_factors
+```
+
+```{r}
+
 nyu_pluto_app %>%
+  left_join(conversion_factors, by = "year") %>% 
   rowwise() %>%
   mutate(assessed_value = max(assesstotl,
     assesstota,
@@ -179,6 +201,7 @@ nyu_pluto_app %>%
     na.rm = T
   )) %>%
   ungroup() %>%
+  mutate(assessed_adj = assessed_value * conv) %>% 
   st_set_geometry("geom_point") %>%
   st_transform(4326) %>%
   select(c(
