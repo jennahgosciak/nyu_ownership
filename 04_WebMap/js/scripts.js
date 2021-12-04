@@ -58,7 +58,7 @@ map.on('load',function(){
     'paint':{
       'circle-radius': [
         '/',
-        ['get', 'assessed_value'], 2000000],
+        ['get', 'assessed_adj'], 2000000],
       'circle-color': '#531C86',
       'circle-opacity':0.7
     },
@@ -80,7 +80,7 @@ map.on('click', 'nyu', function(e) {
   var coordinates = e.features[0].geometry.coordinates.slice();
   // get its species name from the feature's attributes
   var owner = e.features[0].properties.ownername;
-  var value = e.features[0].properties.assessed_value;
+  var value = e.features[0].properties.assessed_adj;
 
   // and create a popup on the map
   new maplibregl.Popup()
