@@ -201,7 +201,7 @@ nyu_pluto_app %>%
     na.rm = T
   )) %>%
   ungroup() %>%
-  mutate(assessed_adj = assessed_value * conv) %>% 
+  mutate(assessed_adj = round(assessed_value * conv)) %>% 
   st_set_geometry("geom_point") %>%
   st_transform(4326) %>%
   select(c(
