@@ -48,16 +48,19 @@ map.on('load',function(){
   // define a 'source' for your point dataset
   map.addSource('nyu_data',{
     'type':'geojson',
-    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_test.geojson"
+    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_filt.geojson"
   });
   // add a new layer with your points
   map.addLayer({
     'id':'nyu',
-    'type':'fill',
+    'type':'circle',
     'source':'nyu_data',
     'paint':{
-      'fill-color': '#531C86',
-      'fill-opacity':0.9
+      'circle-radius': [
+        '/',
+        ['get', 'assessed_value'], 2000000],
+      'circle-color': '#531C86',
+      'circle-opacity':0.7
     },
   })
 
@@ -69,4 +72,38 @@ map.on('load',function(){
   const yr = parseInt(e.target.value, 10);
   filterBy(yr);
   });
+});
+
+// when the user does a 'click' on an element in the 'trees' layer...
+map.on('click', 'nyu', function(e) {
+  // get the map coordinates of the feature
+  var coordinates = e.features[0].geometry.coordinates.slice();
+  // get its species name from the feature's attributes
+  var owner = e.features[0].properties.ownername;
+  var value = e.features[0].properties.assessed_value;
+
+  // and create a popup on the map
+  new maplibregl.Popup()
+  .setLngLat(coordinates)
+  .setHTML(`<table>
+              <tr>
+              <td>Owner</td>
+              <td>${owner}</td>
+              </tr>
+              <tr>
+              <td>Assessed value (adj. for 2021)</td>
+              <td>${value}</td>
+              </tr>
+              </table>`)
+  .addTo(map);
+});
+
+// make the cursor a pointer when over the tree
+map.on('mouseenter', 'nyu', function() {
+  map.getCanvas().style.cursor = 'pointer';
+});
+
+// back to normal when it's not
+map.on('mouseleave', 'nyu', function() {
+  map.getCanvas().style.cursor = '';
 });
