@@ -12,8 +12,10 @@ output:
     theme: paper
 ---
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = F, warning = F,
-                      fig.width = 6, fig.height = 10)
+knitr::opts_chunk$set(
+  echo = TRUE, message = F, warning = F,
+  fig.width = 6, fig.height = 10
+)
 ```
 
 ```{r, setup, include = F}
@@ -49,15 +51,12 @@ con <- dbConnect(Postgres(),
 source("99_common.R")
 out <- "03_Output"
 inp <- "01_Input"
+fig_path <- path("04_WebMap", "data")
 ```
 
 ```{r}
-tbls <- dbListTables(con)
-
-tbls[str_detect(tbls, "acris")]
-
 check_extract <- function(con, tblname) {
-    df1 <- tbl(con, tblname) %>%
+  df1 <- tbl(con, tblname) %>%
     mutate(ownername = str_replace_all(ownername, "[:punct:]", "")) %>%
     filter(str_detect(ownername, "NEW YORK UNI")) %>%
     select(ownername) %>%
@@ -70,23 +69,24 @@ check_extract <- function(con, tblname) {
     select(ownername) %>%
     as_tibble() %>%
     unique()
-  
+
   bind_rows(df1, df2)
 }
 
 extract_nyu <- function(con, tblname, yr, out_path = out) {
   print(paste0("Loading table for: ", tblname))
-  
+
   nyu_pluto <- tryCatch(st_read(con, query = paste0(
     "SELECT * FROM ", tblname,
-    " WHERE ownername ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)'
+    " WHERE ownername ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'
                   AND ownername != 'NYU, SOON KEAT'"
   )) %>%
     mutate(year = yr) %>%
-    mutate(across(c("zipcode", "schooldist"), ~as.character(.))),
-  error=function(cond) {
-            message(paste("Does not work:", tblname))
-            return(NA)}
+    mutate(across(c("zipcode", "schooldist"), ~ as.character(.))),
+  error = function(cond) {
+    message(paste("Does not work:", tblname))
+    return(NA)
+  }
   )
 
   nyu_pluto %>%
@@ -101,55 +101,110 @@ extract_nyu <- function(con, tblname, yr, out_path = out) {
 tbls <- dbListTables(con)
 tbls[str_detect(tbls, "pluto") & str_detect(tbls, "09")]
 
-tblnames <- c("mappluto_02b", "mappluto_03c", "mappluto_04c", "mappluto_05d",
-               "mappluto_06c", "mappluto_07c", "mappluto_09v2", 
-              "mappluto_10v2", "mappluto_11v2",
-               "mappluto_12v2", "mappluto_13v2", "mappluto_14v2", "mappluto_15v1",
-               "mappluto_16v2", "mappluto_17v1_1", "mappluto_18v2", "mappluto_19v2",
-               "mappluto_20v1", "mappluto_21v3")
+tblnames <- c(
+  "mappluto_02b", "mappluto_03c", "mappluto_04c", "mappluto_05d",
+  "mappluto_06c", "mappluto_07c", "mappluto_09v2",
+  "mappluto_10v2", "mappluto_11v2",
+  "mappluto_12v2", "mappluto_13v2", "mappluto_14v2", "mappluto_15v1",
+  "mappluto_16v2", "mappluto_17v1_1", "mappluto_18v2", "mappluto_19v2",
+  "mappluto_20v1", "mappluto_21v3"
+)
 
-nyu_pluto_full <- map2(tblnames, c(2002:2007, 2009:2021), ~extract_nyu(con, .x, .y))
+years <- c(2002:2007, 2009:2021)
+nyu_pluto_full <- map2(tblnames, years, ~ extract_nyu(con, .x, .y))
 nyu_pluto_app <- bind_rows(nyu_pluto_full)
 nyu_pluto_app
 
 # nyu_21 <- extract_nyu(con, "mappluto_21v3", 2021)
 # nyu_21
-# 
-# nyu_21 %>% 
+#
+# nyu_21 %>%
 #   st_write(dsn = path(out, "nyu_21.geojson"), driver = "GeoJSON",
 #            append = F)
-# 
-# nyu_pluto_app %>% 
+#
+# nyu_pluto_app %>%
 #   st_write(dsn = path(out, "nyu_allyrs.geojson"), driver = "GeoJSON",
 #            append = F)
-
-check_names <- map_dfr(tblnames, ~check_extract(con, .)) %>% 
+```
+```{r}
+check_names <- map_dfr(tblnames, ~ check_extract(con, .)) %>%
   unique()
 
-check_names %>% 
+check_names %>%
   write.xlsx(path(out, "check_names.xlsx"), overwrite = T)
 
-check_names %>% 
-  anti_join(nyu_pluto_app, by = "ownername") %>% 
+check_names %>%
+  anti_join(nyu_pluto_app, by = "ownername") %>%
   write.xlsx(path(out, "check_unmg_names.xlsx"), overwrite = T)
+```
+```{r}
+bbl_unmgd <- nyu_pluto_app %>%
+  as_tibble() %>%
+  select(c("bbl")) %>%
+  unique()
 
-nyu_pluto_app %>% 
-  st_transform(4326) %>% 
-  select(c("ownername", "year"), -"geom_poly") %>% 
-  st_as_sf("geom_poly")   %>%
-  st_write(dsn = path(out, "nyu_test.geojson"), driver = "GeoJSON",
-           append = F)
+bbl_comb <- map_dfr(years, ~ mutate(bbl_unmgd, year = .))
+
+bbl_unmgd <- bbl_comb %>%
+  anti_join(nyu_pluto_app, by = c("bbl", "year"))
+
+bbl_unmgd %>%
+  group_by(year) %>%
+  summarize(num_unmgd = n_distinct(bbl))
+
+copy_to(con, bbl_unmgd,
+  name = "bbl_unmgd", overwrite = T,
+  temporary = T
+)
+
+check_pluto <- function(con, tbl, yr) {
+  tbl(con, tbl) %>%
+    inner_join(tbl(con, "bbl_unmgd") %>%
+      filter(year == yr), by = "bbl") %>%
+    select(c("ownername", "bbl", "year")) %>%
+    as_tibble()
+}
+
+full_check <- map2_dfr(tblnames, years, ~ check_pluto(con, .x, .y))
+full_check %>%
+  write.xlsx("unmgd_by_year.xlsx")
+```
+
+```{r, exp pluto}
+nyu_pluto_app %>%
+  rowwise() %>%
+  mutate(assessed_value = max(assesstotl,
+    assesstota,
+    assesstot,
+    na.rm = T
+  )) %>%
+  ungroup() %>%
+  st_set_geometry("geom_point") %>%
+  st_transform(4326) %>%
+  select(c(
+    "ownername", "year", "assessed_value",
+    "lotarea", "geom_point"
+  ), -"geom_poly") %>%
+  st_write(
+    dsn = path(
+      fig_path,
+      "nyu_filt.geojson"
+    ), driver = "GeoJSON",
+    append = F
+  )
 ```
 
 ```{r}
-map_interactive <- nyu_pluto_app %>% 
-  st_transform(4326) %>% 
-  leaflet() %>% 
-  addProviderTiles(provider = "CartoDB.Positron") %>% 
-  addPolygons(stroke = F,
-              smoothFactor = 0.5,
-              opacity = 1,
-              fillOpacity = 0.7)
+map_interactive <- nyu_pluto_app %>%
+  st_transform(4326) %>%
+  leaflet() %>%
+  addProviderTiles(provider = "CartoDB.Positron") %>%
+  addPolygons(
+    stroke = F,
+    smoothFactor = 0.5,
+    opacity = 1,
+    fillOpacity = 0.7
+  )
 map_interactive
 ```
 
@@ -157,8 +212,8 @@ map_interactive
 ```{r}
 tbl(con, "acris_document_control_codes")
 ## Load acris data
-acris_codes <- readr::read_csv(path(inp, "ACRIS_-_Document_Control_Codes.csv"))  %>% 
-  filter(`CLASS CODE DESCRIPTION` == "DEEDS AND OTHER CONVEYANCES") %>% 
+acris_codes <- readr::read_csv(path(inp, "ACRIS_-_Document_Control_Codes.csv")) %>%
+  filter(`CLASS CODE DESCRIPTION` == "DEEDS AND OTHER CONVEYANCES") %>%
   pull(`DOC. TYPE`)
 acris_codes
 
@@ -168,15 +223,13 @@ nyu_acris <- dbGetQuery(con, paste0("SELECT p.*, m.* FROM acris_parties as p
                   INNER JOIN acris_master as m on (p.document_id = m.document_id)
                   LEFT JOIN acris_document_control_codes as d on (m.doc_type = d.doc_type)
                   WHERE p.name ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)'
-                  AND p.name NOT IN ('NYU, SOON KEAT', 
+                  AND p.name NOT IN ('NYU, SOON KEAT',
                                   'OK NYU PARK, AS ADMINISTRATOR OF ESTATE',
                                   'YOON, SOOK NYU CHUNG')
-                                  AND 
+                                  AND
                   d.class_code_description = 'DEEDS AND OTHER CONVEYANCES'"))
 nyu_acris
 
-nyu_acris %>% 
+nyu_acris %>%
   tablist_qc(name)
 ```
-
-
