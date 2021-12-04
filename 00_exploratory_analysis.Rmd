@@ -205,7 +205,7 @@ nyu_pluto_app %>%
   st_set_geometry("geom_point") %>%
   st_transform(4326) %>%
   select(c(
-    "ownername", "year", "assessed_value",
+    "ownername", "year", "assessed_adj",
     "lotarea", "geom_point"
   ), -"geom_poly") %>%
   st_write(
