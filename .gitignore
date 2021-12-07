@@ -18,7 +18,10 @@
 */00_Georeferencing/*
 00_Georeferencing/
 !04_WebMap/
-03_Output/*.geojson
+!03_Output/nyu_allyrs.geojson
+!03_Output/nyu_allyrs_pts.geojson
+!03_Output/nyu_21.geojson
+03_Output/
 01_Input/
 
 # History files
