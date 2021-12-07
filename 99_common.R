@@ -1,3 +1,11 @@
+max_noinf <- function(...) {
+  if (any(unlist(map(..., ~!is.na(.))))) {
+    return(NA)
+  } else{
+    max(..., na.rm = T)
+  }
+}
+
 gt_style <- function(gt) {
   gt %>%
     tab_options(table.align = "left") %>%

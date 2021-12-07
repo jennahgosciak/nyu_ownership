@@ -10,6 +10,16 @@
 *.qgz
 00_Georeferencing/IMG_9293.jpg.points
 00_Georeferencing/IMG_9293.wld
+*.RDS
+*.pdf
+*.points
+*.doc
+*.qgz
+*/00_Georeferencing/*
+00_Georeferencing/
+!04_WebMap/
+03_Output/*.geojson
+01_Input/
 
 # History files
 .Rhistory
@@ -50,3 +60,4 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+00_Georeferencing
