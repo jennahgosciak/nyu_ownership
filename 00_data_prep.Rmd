@@ -135,20 +135,25 @@ check_extract <- function(con, tblname) {
 
 extract_nyu <- function(con, tblname, yr, out_path = out) {
   print(paste0("Loading table for: ", tblname))
-
+  
   nyu_pluto <- tryCatch(st_read(con, query = paste0(
     "SELECT * FROM ", tblname,
     " WHERE ownername ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'
                   AND ownername != 'NYU, SOON KEAT'"
   )) %>%
-    mutate(year = yr) %>%
-    mutate(across(c("zipcode", "schooldist"), ~ as.character(.))),
+    mutate(year = yr) %>% 
+    rename_at(vars(starts_with("assesstot")), ~"assessed_value") %>% 
+    rename_at(vars(starts_with("cd")), ~"cd") %>%
+    rename_at(vars(starts_with("floorarea")), ~"bldgarea") %>% 
+    rename_at(vars(starts_with("landuse")), ~"landuse") %>% 
+    select(c("assessed_value", "cd", "bldgarea", "landuse",
+             "owername"), matches("area"),
+           matches("address"), "bbl"),
   error = function(cond) {
     message(paste("Does not work:", tblname))
     return(NA)
   }
   )
-
   nyu_pluto %>%
     nrow()
 
@@ -190,6 +195,9 @@ nyu_pluto_app %>%
   st_set_geometry("geom_poly") %>% 
   st_transform(2263) %>% 
   select(-"geom_point") %>% 
+  select(matches("assess"), starts_with("cd"),
+         matches("land"), "ownername", matches("area"),
+           matches("address"), "bbl") %>% 
   st_write(dsn = path(out, "nyu_allyrs.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
@@ -198,6 +206,9 @@ nyu_pluto_app %>%
   st_set_geometry("geom_point") %>% 
   st_transform(2263) %>% 
   select(-"geom_poly") %>% 
+  select(matches("assess"), starts_with("cd"),
+         matches("land"), "ownername", matches("area"),
+           matches("address"), "bbl") %>% 
   st_write(dsn = path(out, "nyu_allyrs_pts.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
