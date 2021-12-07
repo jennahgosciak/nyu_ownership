@@ -38,17 +38,7 @@ library(sf)
 library(vroom)
 library(leaflet)
 library(haven)
-
-
-# DB Connection
-con <- dbConnect(Postgres(),
-  user = "furmandata",
-  password = rstudioapi::askForPassword(),
-  host = "fcdata.c7h93yqbqnvu.us-east-1.rds.amazonaws.com",
-  port = 5432,
-  dbname = "fcdata",
-  bigint = "integer"
-)
+library(geojsonsf)
 
 source("99_common.R")
 out <- "03_Output"
@@ -83,8 +73,23 @@ conversion_factors
 
 ## NYU Assess Value Analysis
 ```{r}
-nyu_pluto_app <- st_read(path(out, "nyu_allyrs_pts.geojson"))
-nyu_pluto_app %>% 
+drop_vars <- c("shape_area",
+               "strgearea",
+               "garagearea",
+               "retailarea",
+               "areasource",
+               "otherArea",
+               "landmark",
+               "healtharea",
+               "officearea",
+               "ind_area",
+               "comArea",
+               "landmkdate",
+               "factryarea",
+               "areaSource",
+               )
+nyu_pluto_app <- geojson_sf(path(out, "nyu_allyrs.geojson"))
+nyu_pluto_app <- nyu_pluto_app %>% 
   as_tibble()
 ```
 

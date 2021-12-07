@@ -146,8 +146,11 @@ extract_nyu <- function(con, tblname, yr, out_path = out) {
     rename_at(vars(starts_with("cd")), ~"cd") %>%
     rename_at(vars(starts_with("floorarea")), ~"bldgarea") %>% 
     rename_at(vars(starts_with("landuse")), ~"landuse") %>% 
+    rename_all(~str_to_lower(.)) %>% 
     select(c("assessed_value", "cd", "bldgarea", "landuse",
              "owername"), matches("area"),
+           matches("assess"),
+           matches("yearbuilt"),
            matches("address"), "bbl"),
   error = function(cond) {
     message(paste("Does not work:", tblname))
@@ -185,6 +188,25 @@ nyu_21
 
 nyu_pluto_app %>% 
   tablist_qc(ownername)
+```
+
+Export output
+```{r}
+drop_vars <- c("shape_area",
+               "strgearea",
+               "garagearea",
+               "retailarea",
+               "areasource",
+               "otherarea",
+               "landmark",
+               "healtharea",
+               "officearea",
+               "ind_area",
+               "comarea",
+               "landmkdate",
+               "factryarea",
+               "areasource",
+               )
 
 nyu_21 %>%
   st_write(dsn = path(out, "nyu_21.geojson"), driver = "GeoJSON",
@@ -195,9 +217,7 @@ nyu_pluto_app %>%
   st_set_geometry("geom_poly") %>% 
   st_transform(2263) %>% 
   select(-"geom_point") %>% 
-  select(matches("assess"), starts_with("cd"),
-         matches("land"), "ownername", matches("area"),
-           matches("address"), "bbl") %>% 
+  select(-drop_vars) %>% 
   st_write(dsn = path(out, "nyu_allyrs.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
@@ -206,9 +226,7 @@ nyu_pluto_app %>%
   st_set_geometry("geom_point") %>% 
   st_transform(2263) %>% 
   select(-"geom_poly") %>% 
-  select(matches("assess"), starts_with("cd"),
-         matches("land"), "ownername", matches("area"),
-           matches("address"), "bbl") %>% 
+  select(-drop_vars) %>% 
   st_write(dsn = path(out, "nyu_allyrs_pts.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
