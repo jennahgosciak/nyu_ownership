@@ -217,7 +217,7 @@ nyu_pluto_app %>%
   st_set_geometry("geom_poly") %>% 
   st_transform(2263) %>% 
   select(-"geom_point") %>% 
-  select(-drop_vars) %>% 
+  select(-any_of(drop_vars)) %>% 
   st_write(dsn = path(out, "nyu_allyrs.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
@@ -226,7 +226,7 @@ nyu_pluto_app %>%
   st_set_geometry("geom_point") %>% 
   st_transform(2263) %>% 
   select(-"geom_poly") %>% 
-  select(-drop_vars) %>% 
+  select(-any_of(drop_vars)) %>% 
   st_write(dsn = path(out, "nyu_allyrs_pts.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
