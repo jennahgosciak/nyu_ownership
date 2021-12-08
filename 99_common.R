@@ -1,8 +1,8 @@
 max_noinf <- function(...) {
   if (any(unlist(map(..., ~!is.na(.))))) {
-    return(NA)
-  } else{
     max(..., na.rm = T)
+  } else{
+    return(NA)
   }
 }
 

@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r, setup, include = F}
+```{r, setup2, include = F}
 # Setup
 library(renv)
 library(tidyverse)
@@ -39,6 +39,7 @@ library(vroom)
 library(leaflet)
 library(haven)
 library(geojsonsf)
+library(s2)
 
 source("99_common.R")
 out <- "03_Output"
@@ -78,54 +79,85 @@ drop_vars <- c("shape_area",
                "garagearea",
                "retailarea",
                "areasource",
-               "otherArea",
+               "otherarea",
                "landmark",
                "healtharea",
                "officearea",
                "ind_area",
-               "comArea",
+               "comarea",
                "landmkdate",
                "factryarea",
-               "areaSource",
-               )
-nyu_pluto_app <- geojson_sf(path(out, "nyu_allyrs.geojson"))
-nyu_pluto_app <- nyu_pluto_app %>% 
-  as_tibble()
+               "areasource")
+
+nyu_pluto_app <- st_read(path(out, "nyu_allyrs_pts.geojson")) %>% 
+  select(-any_of(drop_vars))
+
+# checking geometry works
+nyu_pluto_app %>% 
+  filter(year == 2021) %>% 
+  head(5) %>% 
+  ggplot() +
+  geom_sf()
+
+nyu_df <- nyu_pluto_app %>% 
+  select(-any_of(drop_vars)) %>% 
+  mutate(geom_point = geometry) %>% 
+  st_set_geometry(NULL)  %>%
+  mutate(cd = ifelse(is.na(cd), cd2, cd)) %>% 
+  mutate(borough = str_sub(cd, 1, 1)) %>% 
+  select(-"cd2") %>% 
+  verify(!is.na(borough))
+
+nyu_df
 ```
 
 ```{r}
-nyu_assess_value <- nyu_pluto_app %>%
+# load assessed_value_avg
+assessed_value_avg <- readRDS(path(out, "assess_value_averages.RDS"))
+
+nrow(nyu_df)
+
+nyu_assess_value <- nyu_df %>%
+  select("bbl", "cd", "year", matches("assess"),
+         "bldgarea", "geom_point", "floorarea",
+         "ownername", "address", "borough") %>% 
+  mutate(borough = str_sub(cd, 1, 1),
+           cd = as.numeric(cd)) %>% 
   left_join(conversion_factors, by = "year") %>% 
-  mutate(cd = if_else(is.na(cd), cd2, cd)) %>% 
   left_join(assessed_value_avg, by = c("cd", "year")) %>% 
   rowwise() %>%
   mutate(assessed_value_orig = max_noinf(assesstotl, 
                                    assesstota, 
                                    assesstot)) %>% 
   ungroup() %>% 
-  mutate(bldgarea = if_else(is.na(bldgarea), floorarea, as.double(bldgarea))) %>%
+  mutate(bldgarea = if_else(is.na(bldgarea), 
+                            floorarea, as.double(bldgarea))) %>%
   mutate(assessed_value = bldgarea * avg_value_sqft) 
 
-nyu_assess_value
-%>% 
+nyu_assess_value <- nyu_assess_value %>% 
   ungroup() %>%
-  mutate(assessed_adj = if_else(year < 2021, round(assessed_value * conv),
+  mutate(assessed_adj = if_else(year < 2021,
+                                round(assessed_value * conv),
                                 assessed_value)) %>% 
   st_set_geometry("geom_point") %>%
   st_transform(4326) %>%
   select(c(
     "ownername", "year", "assessed_adj",
-    "lotarea", "bldgarea", "floorarea", "geom_point", "cd",
+    "bldgarea", "floorarea", 
+    "geom_point", "cd",
     "address", "bbl", "borough",
-  ), starts_with("assess"), matches("area"), -"geom_poly") %>% 
-  mutate(borough = recode(borough, "BK" = "Brooklyn", "MN" = "Manhattan",
-                          "BX" = "Bronx", "SI" = "Staten Island",
-                          "QN" = "Queens"))
+  ), starts_with("assess"), 
+  matches("area")) %>% 
+  mutate(borough = recode(borough, "3" = "Brooklyn", "1" = "Manhattan",
+                          "2" = "Bronx", "5" = "Staten Island",
+                          "4" = "Queens"))
 nyu_assess_value %>%
+  select(c("ownername", "address",
+           "assessed_adj")) %>% 
   st_write(
     dsn = path(
       fig_path,
-      "nyu_filt.geojson"
+      "nyu_assess_value.geojson"
     ), driver = "GeoJSON",
     append = F,
     delete_dsn = T
