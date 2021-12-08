@@ -18,7 +18,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-```{r, setup, include = F}
+```{r, setup2, include = F}
 # Setup
 library(renv)
 library(tidyverse)
@@ -69,8 +69,6 @@ rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,
                       WHERE r.year4 < 2002 AND
                       r.owner ~* 
                     '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'")
-
-rpad_lt2002
 ```
 ```{r}
 # select only relevant vars
@@ -109,8 +107,33 @@ pluto2008 <- map2_dfr(boros, abbs,
                       ~st_read(path(inp, "mappluto_08b", 
                                     "mappluto_08b", .x, paste0(.y, "MapPLUTO.shp"))))  %>% 
   mutate(year = 2008)
-                        
+
+# convert lowercase
+lowernames <- names(pluto2008) %>% 
+  str_to_lower()
+names(pluto2008) <- lowernames
+
+# filter out unncessary vars
+pluto2008 <- pluto2008 %>% 
+    filter(str_detect(ownername, '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'),
+         ownername != 'NYU, SOON KEAT') %>% 
+    mutate(geom_poly = geometry,
+           geom_point = st_centroid(geometry)) %>% 
+    select("ownername", matches("area"),
+           matches("cd"),
+           matches("assess"),
+           matches("yearbuilt"),
+           matches("address"), "bbl",
+           "year",
+           "geom_poly",
+           "geom_point") %>% 
+  mutate(bbl = as.character(bbl)) %>% 
+  st_set_geometry("geom_poly") %>% 
+  select(-"geometry") 
+
 pluto2008
+
+nrow(pluto2008)
 ```
 
 ## Load all other PLUTO Files
@@ -136,27 +159,26 @@ check_extract <- function(con, tblname) {
 extract_nyu <- function(con, tblname, yr, out_path = out) {
   print(paste0("Loading table for: ", tblname))
   
-  nyu_pluto <- tryCatch(st_read(con, query = paste0(
+  nyu_pluto <- st_read(con, query = paste0(
     "SELECT * FROM ", tblname,
     " WHERE ownername ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'
                   AND ownername != 'NYU, SOON KEAT'"
   )) %>%
-    mutate(year = yr) %>% 
-    rename_at(vars(starts_with("assesstot")), ~"assessed_value") %>% 
-    rename_at(vars(starts_with("cd")), ~"cd") %>%
-    rename_at(vars(starts_with("floorarea")), ~"bldgarea") %>% 
-    rename_at(vars(starts_with("landuse")), ~"landuse") %>% 
-    rename_all(~str_to_lower(.)) %>% 
-    select(c("assessed_value", "cd", "bldgarea", "landuse",
-             "owername"), matches("area"),
+    mutate(year = yr)
+  
+  lower_names <- str_to_lower(names(nyu_pluto))
+  names(nyu_pluto) <- lower_names
+  
+  nyu_pluto <- nyu_pluto %>% 
+    select("ownername", matches("area"),
+           matches("cd"),
            matches("assess"),
            matches("yearbuilt"),
-           matches("address"), "bbl"),
-  error = function(cond) {
-    message(paste("Does not work:", tblname))
-    return(NA)
-  }
-  )
+           matches("address"), "bbl",
+           "year",
+           "geom_poly",
+           "geom_point")
+    
   nyu_pluto %>%
     nrow()
 
@@ -165,7 +187,8 @@ extract_nyu <- function(con, tblname, yr, out_path = out) {
 
   return(nyu_pluto)
 }
-
+```
+```{r}
 tbls <- dbListTables(con)
 tbls[str_detect(tbls, "pluto") & str_detect(tbls, "09")]
 
@@ -180,34 +203,17 @@ tblnames <- c(
 
 years <- c(2002:2007, 2009:2021)
 nyu_pluto_full <- map2(tblnames, years, ~ extract_nyu(con, .x, .y))
+```
+```{r}
 nyu_pluto_app <- bind_rows(nyu_pluto_full, pluto2008, rpad_filt)
 nyu_pluto_app
 
 nyu_21 <- extract_nyu(con, "mappluto_21v3", 2021)
 nyu_21
-
-nyu_pluto_app %>% 
-  tablist_qc(ownername)
 ```
 
 Export output
 ```{r}
-drop_vars <- c("shape_area",
-               "strgearea",
-               "garagearea",
-               "retailarea",
-               "areasource",
-               "otherarea",
-               "landmark",
-               "healtharea",
-               "officearea",
-               "ind_area",
-               "comarea",
-               "landmkdate",
-               "factryarea",
-               "areasource",
-               )
-
 nyu_21 %>%
   st_write(dsn = path(out, "nyu_21.geojson"), driver = "GeoJSON",
            append = F,
@@ -217,7 +223,6 @@ nyu_pluto_app %>%
   st_set_geometry("geom_poly") %>% 
   st_transform(2263) %>% 
   select(-"geom_point") %>% 
-  select(-drop_vars) %>% 
   st_write(dsn = path(out, "nyu_allyrs.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
@@ -226,7 +231,6 @@ nyu_pluto_app %>%
   st_set_geometry("geom_point") %>% 
   st_transform(2263) %>% 
   select(-"geom_poly") %>% 
-  select(-drop_vars) %>% 
   st_write(dsn = path(out, "nyu_allyrs_pts.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
@@ -276,7 +280,7 @@ check_pluto <- function(con, tbl, yr) {
 
 full_check <- map2_dfr(tblnames, years, ~ check_pluto(con, .x, .y))
 full_check %>%
-  write.xlsx("unmgd_by_year.xlsx")
+  write.xlsx(path(out, "unmgd_by_year.xlsx"), overwrite = T)
 ```
 
 ## Calculate average assessed value for all commercial buildings in a CD
