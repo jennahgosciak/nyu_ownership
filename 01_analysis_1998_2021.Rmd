@@ -320,12 +320,19 @@ nyu_21 %>%
   geom_sf(data = parks,
             fill = "#777777", color = NA) +
   geom_sf(fill = "#9057FF", color = NA) +
-  geom_sf(data = cds, color = "white", fill = NA, size = 0.1) +
+  geom_sf(data = cds, color = "#777777", fill = NA, size = 0.1) +
   theme_void() +
-  theme(plot.background = element_rect(fill = '#414141'))
+  theme(
+    panel.border = element_blank(),
+    axis.text = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = '#A5A5A5', color = NA),
+    panel.background = element_rect(fill = '#A5A5A5', color = NA)
+  )
 
-ggsave(path(fig_path, "nyu_21_map.pdf"), height = 15, width = 15)
-ggsave(path(fig_path, "nyu_21_map.png"), height = 15, width = 15)
+ggsave(path(fig_path, "nyu_21_map.pdf"), height = 12.5, width = 20)
+#ggsave(path(fig_path, "nyu_21_map.png"), height = 12.5, width = 20)
 ```
 
 
