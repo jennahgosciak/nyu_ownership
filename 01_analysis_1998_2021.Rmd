@@ -331,7 +331,7 @@ nyu_21 %>%
     panel.background = element_rect(fill = '#A5A5A5', color = NA)
   )
 
-ggsave(path(fig_path, "nyu_21_map.pdf"), height = 12.5, width = 20)
+ggsave(path(fig_path, "nyu_21_map.pdf"), height = 12.5, width = 24)
 #ggsave(path(fig_path, "nyu_21_map.png"), height = 12.5, width = 20)
 ```
 
