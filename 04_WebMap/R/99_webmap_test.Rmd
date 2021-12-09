@@ -10,6 +10,17 @@ output:
     preserve_yaml: true
 ---
 
+```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+knitr::opts_knit$set(global.par = TRUE)
+rm(list = ls())
+library(rmarkdown)
+library(htmlwidgets)
+```
 
 ```{r, include = F}
 library(leaflet)
