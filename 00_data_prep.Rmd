@@ -79,7 +79,8 @@ rpad_filt <- rpad_lt2002 %>%
            "zip", "tot_unit", "res_unit", "bldgs",
            "lnd_area", "gr_sqft", "zoning", "yrb", "year4")) %>% 
   rename(bldgarea = gr_sqft,
-         year = year4) 
+         year = year4,
+         bldcl = bldgclass) 
   
 
 rpad_lt2002 %>% 
@@ -174,7 +175,9 @@ extract_nyu <- function(con, tblname, yr, out_path = out) {
            matches("cd"),
            matches("assess"),
            matches("yearbuilt"),
-           matches("address"), "bbl",
+           matches("address"),
+           matches("bldg"), 
+           matches("land"), "bbl",
            "year",
            "geom_poly",
            "geom_point")

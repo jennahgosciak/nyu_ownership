@@ -109,6 +109,10 @@ nyu_poly <- st_read(path(out, "nyu_allyrs.geojson")) %>%
   verify(!is.na(borough)) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC")))
+
+nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>% 
+  filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
+                            "ARA HOLDINGS OF NYU LLC")))
 ```
 
 ```{r}
@@ -186,7 +190,82 @@ nyu_poly %>%
   group_by(cd) %>% 
   summarize(total_bldarea = sum(bldgarea),
             total_bld = n_distinct(bbl))
+
+nyu_poly %>% 
+  filter(year == 2021) %>% 
+  as_tibble() %>% 
+  arrange(cd) %>% 
+  select(c("cd", "bbl", "ownername", "address"), everything()) %>% 
+  verify(!is.na(bldgarea)) %>% 
+  filter(address == "28 BETHUNE STREET" |
+         address == "63 CHARLES STREET")
+
+nyu_poly %>% 
+  filter(year == 2021) %>% 
+  as_tibble() %>% 
+  arrange(cd) %>% 
+  select(c("cd", "bbl", "ownername", "address"), everything()) %>% 
+  verify(!is.na(bldgarea)) %>% 
+  filter(cd == 307)
+
+total_lotarea <- tbl(con, "mappluto_21v3") %>% 
+  filter(bldgclass %in% c("W5", "W6")) %>% 
+  summarize(total_lotarea = sum(lotarea, na.rm = T),
+            total_bldgarea = sum(bldgarea, na.rm = T)) %>% 
+  as_tibble()
+total_lotarea
+
+nyu_21 %>% 
+  as_tibble() %>% 
+  summarize(nyu_lotarea = sum(lotarea, na.rm = T),
+            nyu_bldgarea = sum(bldgarea, na.rm = T))
+  
+nyu_21 %>% 
+  filter(bldgclass %in% c("W5", "W6")) %>% 
+  as_tibble() %>% 
+  summarize(nyu_lotarea = sum(lotarea, na.rm = T),
+            nyu_bldgarea = sum(bldgarea, na.rm = T)) %>% 
+  cbind(total_lotarea) %>% 
+  mutate(nyu_lotshare = nyu_lotarea * 100 / total_lotarea,
+         nyu_bldgshare = nyu_bldgarea * 100 / total_bldgarea)
+
+nyu_21 %>% 
+  filter(landuse %in% c("01", "02", "03", "04")) %>% 
+  as_tibble() %>% 
+  summarize(nyu_lotarea = sum(lotarea, na.rm = T),
+            nyu_bldgarea = sum(bldgarea, na.rm = T))
+
+nyu_21 %>% 
+  filter(str_sub(bldgclass, 1, 1) == "I") %>% 
+  as_tibble() %>% 
+  summarize(nyu_lotarea = sum(lotarea, na.rm = T),
+            nyu_bldgarea = sum(bldgarea, na.rm = T))
+
+nyu_21 %>% 
+  filter(bldgclass %in% c("W5", "W6")) %>% 
+  as_tibble() %>% 
+  pull(landuse) %>% 
+  unique()
+
+nyu_21 %>%
+  summarize(assesstot = sum(assesstot, na.rm = T))
 ```
+
+# Interactive map in leaflet
+```{r}
+nyu_leaflet <- st_transform(nyu_poly, 4263) %>% 
+  filter(year == 2021) %>% 
+  filter(!st_is_empty(.))
+
+map_interactive <- leaflet(nyu_leaflet) %>%
+  setView(lng = -73.9973, 
+          lat = 40.7309, zoom = 14) %>% 
+  addProviderTiles(provider = "CartoDB.DarkMatterNoLabels") %>% 
+  addPolygons(color= "#9057FF", stroke = F,
+              label = ~address, fillOpacity = 1)
+map_interactive
+```
+
 ```{r}
 # function to clip and export by cd in 2021
 # programmatically exporting plots
@@ -230,8 +309,24 @@ expt_cd <- function(cds, shp, cd_num, yr) {
   ggsave(path(fig_path, paste0("nyu_cd_", cd_num, "_", yr, ".pdf")))
 }
 
+# output all cds with nyu property in 2021
 walk(intersecting_cds, ~expt_cd(cds, nyu_poly, ., 2021))
 ```
+```{r}
+nyu_21 %>% 
+  ggplot() +
+  geom_sf(data = streets,
+          color = "white", size = 0.01, alpha = 0.2, fill = NA) +
+  geom_sf(data = parks,
+            fill = "#777777", color = NA) +
+  geom_sf(fill = "#9057FF", color = NA) +
+  geom_sf(data = cds, color = "white", fill = NA, size = 0.1) +
+  theme_void() +
+  theme(plot.background = element_rect(fill = '#424242'))
+
+ggsave(path(fig_path, "nyu_21_map.pdf"), height = 15, width = 15)
+```
+
 
 ```{r}
 # create a dataframe of the properties
@@ -416,17 +511,6 @@ tbl(con, "mappluto_15v1") %>%
   select(c("ownername", "bldgarea"), everything())
 ```
 
-
-
-
-# interactive map in leaflet
-```{r}
-map_interactive <- nyu_pluto_app %>%
-  st_transform(4326) %>%
-  leaflet() %>%
-  addProviderTiles(provider = "CartoDB.Positron")
-map_interactive
-```
 
 # Load deed data from Acris
 ```{r}
