@@ -322,9 +322,10 @@ nyu_21 %>%
   geom_sf(fill = "#9057FF", color = NA) +
   geom_sf(data = cds, color = "white", fill = NA, size = 0.1) +
   theme_void() +
-  theme(plot.background = element_rect(fill = '#424242'))
+  theme(plot.background = element_rect(fill = '#414141'))
 
 ggsave(path(fig_path, "nyu_21_map.pdf"), height = 15, width = 15)
+ggsave(path(fig_path, "nyu_21_map.svg"), height = 15, width = 15)
 ```
 
 
