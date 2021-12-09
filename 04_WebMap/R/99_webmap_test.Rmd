@@ -12,6 +12,9 @@ output:
 
 
 ```{r, include = F}
+library(leaflet)
+library(dplyr)
+library(sf)
 url_boro <- "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Borough_Boundary/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson"
 url_nhood <- "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2020/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson"
 url_streets <- "https://data.cityofnewyork.us/resource/m6hn-ddkx.geojson?$limit=200000"
@@ -31,6 +34,11 @@ cds <- st_read(url_cds)  %>%
 # load parks
 parks <- st_read(url_parks) %>% 
   st_transform(2263)
+
+# load nyu data
+url_nyu <- "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/main/03_Output/nyu_21.geojson"
+nyu_21 <- st_read(url_nyu)
+nyu_21
 ```
 
 ```{r}
