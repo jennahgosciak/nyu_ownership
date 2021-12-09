@@ -325,7 +325,7 @@ nyu_21 %>%
   theme(plot.background = element_rect(fill = '#414141'))
 
 ggsave(path(fig_path, "nyu_21_map.pdf"), height = 15, width = 15)
-ggsave(path(fig_path, "nyu_21_map.svg"), height = 15, width = 15)
+ggsave(path(fig_path, "nyu_21_map.png"), height = 15, width = 15)
 ```
 
 
