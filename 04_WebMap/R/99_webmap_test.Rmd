@@ -1,0 +1,74 @@
+---
+title: Explore NYU 2021, <strong>R</strong>, Markdown, Jekyll and GitHub
+tags: [R,leaflet,Jekyll, html, maps]
+leafletmap: true
+always_allow_html: yes
+last_modified_at: 2021-05-30
+output: 
+  md_document:
+    variant: gfm
+    preserve_yaml: true
+---
+
+```{r setup, echo=FALSE, warning=FALSE, message=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+knitr::opts_knit$set(global.par = TRUE)
+rm(list = ls())
+library(rmarkdown)
+library(htmlwidgets)
+```
+
+```{r, include = F}
+library(leaflet)
+library(dplyr)
+library(sf)
+url_boro <- "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Borough_Boundary/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson"
+url_nhood <- "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2020/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson"
+url_streets <- "https://data.cityofnewyork.us/resource/m6hn-ddkx.geojson?$limit=200000"
+url_roads <- "https://data.cityofnewyork.us/resource/gdww-crzy.geojson"
+url_cds <- "https://data.cityofnewyork.us/resource/jp9i-3b7y.geojson?$limit=200000"
+url_parks <- "https://data.cityofnewyork.us/resource/y6ja-fw4f.geojson?$limit=200000"
+
+# load major streets
+streets <- st_read(url_streets) %>% 
+  st_transform(2263)
+nrow(streets)
+
+# load cds
+cds <- st_read(url_cds)  %>% 
+  st_transform(2263)
+
+# load parks
+parks <- st_read(url_parks) %>% 
+  st_transform(2263)
+
+# load nyu data
+url_nyu <- "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/main/03_Output/nyu_21.geojson"
+nyu_21 <- st_read(url_nyu)
+nyu_21
+```
+
+```{r}
+map_interactive <- leaflet(st_transform(nyu_21, 4263)) %>%
+  setView(lng = -73.9973, 
+          lat = 40.7309, zoom = 10) %>% 
+  addPolygons(color= "#9057FF", stroke = F,
+              label = ~address, fillOpacity = 1) %>% 
+  addPolygons(data = st_transform(cds, 4263), color = "#777777",
+              stroke = T,
+              fillColor = "transparent",
+              fillOpacity = 1,
+              weight = 1)  %>% 
+  addPolygons(data = st_transform(streets, 4263), color = "white",
+              stroke = T,
+              fillColor = "transparent",
+              fillOpacity = 1,
+              weight = 0.5,
+              opacity = 0.2)
+map_interactive
+```
+
