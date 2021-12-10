@@ -68,7 +68,7 @@ rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,
                       LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
                       WHERE r.year4 < 2002 AND
                       r.owner ~* 
-                    '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'")
+                    '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)'")
 ```
 ```{r}
 # select only relevant vars
@@ -133,7 +133,7 @@ pluto2008_assessed_value
 ```{r}
 # filter out unncessary vars
 pluto2008_nyu <- pluto2008 %>% 
-    filter(str_detect(ownername, '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'),
+    filter(str_detect(ownername, '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)'),
          ownername != 'NYU, SOON KEAT') %>% 
     mutate(geom_poly = geometry,
            geom_point = st_centroid(geometry)) %>% 
@@ -179,8 +179,8 @@ extract_nyu <- function(con, tblname, yr, out_path = out) {
   
   nyu_pluto <- st_read(con, query = paste0(
     "SELECT * FROM ", tblname,
-    " WHERE ownername ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'
-                  AND ownername != 'NYU, SOON KEAT'"
+    " WHERE (ownername ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)'
+                  AND ownername != 'NYU, SOON KEAT') OR bbl = '1005330001'"
   )) %>%
     mutate(year = yr)
   

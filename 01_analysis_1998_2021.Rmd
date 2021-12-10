@@ -474,7 +474,7 @@ nyu_assess_geo %>%
 nyu_assess_geo
 
 tbl(con, "mappluto_05d") %>% 
-  filter(address == "1 WASHINGTON SQ VLLGE") %>% 
+  filter(str_detect(ownername, "POLYTECHNIC")) %>% 
   select(c("ownername"), everything())
 ```
 ## Assessed value over time
