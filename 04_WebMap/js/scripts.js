@@ -46,6 +46,7 @@ function filterBy(year) {
 
   // Set the label to the month
   document.getElementById('year').textContent = years[years.indexOf(year)];
+  document.getElementById('tax_calc').textContent = map.map.queryRenderedFeatures({layers: ['nyu_data']});
 }
 
 map.on('load',function(){

@@ -32,7 +32,9 @@
 
   <style>
       #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-bottom.mapboxgl-popup-anchor-bottom > div.maplibregl-popup-content.mapboxgl-popup-content > table,
-      #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-bottom.mapboxgl-popup-anchor-bottom > div.maplibregl-popup-content.mapboxgl-popup-content {
+      #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-bottom.mapboxgl-popup-anchor-bottom > div.maplibregl-popup-content.mapboxgl-popup-content,
+      #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-top.mapboxgl-popup-anchor-top,
+      #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-top.mapboxgl-popup-anchor-top > div.maplibregl-popup-content.mapboxgl-popup-content {
         color: 'black';
         background-color: rgb(211, 211, 211, 0.5);
         padding: 10px;
@@ -48,11 +50,10 @@
 				<h2 style="color:white">NYU Ownership of Land (2002-2021)</h2>
 				<label style = "color: white" id="year"></label>
 				<input id="slider" type="range" min="2002" max="2021" step="1" value="2002">
+        <h3 style="color:white"> Estimated taxes</h3>
+        <label style = "color: white" id="tax_calc"></label>
 			</div>
 		</div>
-
-    <!-- an element called 'info' -->
-    <div id='info'></div>
 
 		<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 

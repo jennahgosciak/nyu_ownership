@@ -11,20 +11,6 @@ body, html {
     width: 100%;
 }
 
-#info {
-    position: absolute;
-    top: 0;
-    right: 0;
-    margin: 10px 10px auto auto;    /* top right bottom left */
-    padding: 5px;
-    border: 2px solid #ddd;
-    border-radius: 5px;
-    font-size: 12px;
-    text-align: center;
-    color: #222;
-    background: #fff;
-}
-
 img {
     width: 300px;
 }
@@ -37,6 +23,7 @@ top: 0;
 left: 0;
 padding: 10px;
 }
+
 
 .map-overlay .map-overlay-inner {
 background-color: rgba(24, 24, 24, 0.5);
@@ -58,7 +45,7 @@ width: 100%;
 background: linear-gradient(to right, #fca107, #7f3121);
 }
 
-.map-overlay input {
+.map-overlay {
 background-color: transparent;
 display: inline-block;
 width: 100%;
@@ -66,6 +53,7 @@ position: relative;
 margin: 0;
 cursor: ew-resize;
 }
+
 
 /*Chrome*/
 @media screen and (-webkit-min-device-pixel-ratio:0) {
