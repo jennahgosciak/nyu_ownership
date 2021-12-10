@@ -14,30 +14,26 @@ var map = new maplibregl.Map({
 });
 
 const years = [
-  1998,
-  1999,
-  2000,
-  2001,
-  2002,
-  2003,
-  2004,
-  2005,
-  2006,
-  2007,
-  2008,
-  2009,
-  2010,
-  2011,
-  2012,
-  2013,
-  2014,
-  2015,
-  2016,
-  2017,
-  2018,
-  2019,
-  2020,
-  2021
+2002,
+2003,
+2004,
+2005,
+2006,
+2007,
+2008,
+2009,
+2010,
+2011,
+2012,
+2013,
+2014,
+2015,
+2016,
+2017,
+2018,
+2019,
+2020,
+2021
 ];
 
 function filterBy(year) {
@@ -52,22 +48,25 @@ map.on('load',function(){
   // define a 'source' for your point dataset
   map.addSource('nyu_data',{
     'type':'geojson',
-    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_allyrs.geojson"
+    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_filt.geojson"
   });
   // add a new layer with your points
   map.addLayer({
     'id':'nyu',
-    'type':'fill',
+    'type':'circle',
     'source':'nyu_data',
-    layout: {},
     'paint':{
-      'fill-color': '#9057FF'
+      'circle-radius': [
+        '/',
+        ['get', 'assessed_adj'], 2000000],
+      'circle-color': '#531C86',
+      'circle-opacity':0.7
     },
   })
 
   // Set filter to first year
   // 0 = January
-  filterBy(1998);
+  filterBy(2002);
 
   document.getElementById('slider').addEventListener('input', (e) => {
   const yr = parseInt(e.target.value, 10);
