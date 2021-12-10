@@ -426,16 +426,14 @@ nyu_assess_geo <- nyu_assess_value  %>%
   st_transform(4326) %>%
   mutate(bldgarea = case_when(is.na(bldgarea) ~ floorarea,
                               TRUE ~ bldgarea)) %>% 
-  select(c(
+  select(
     "ownername", "year", "assessed_adj",
     "assessed_value_orig",
     matches("area"),
     "geom_point", "cd",
     "address", "bbl", "borough",
-    "taxes_yr", "taxes_calc",
-    matches("land"),
-  ), starts_with("assess"), 
-  matches("area"))
+    "taxes_yr", "taxes_calc", 
+    matches("area")
 
 nyu_assess_geo %>%
   st_write(
