@@ -45,6 +45,7 @@ source("99_common.R")
 out <- "03_Output"
 inp <- "01_Input"
 fig_path <- path("03_Output", "figs")
+web_path <- path("04_WebMap", "data")
 spatial_path <- path("03_Output", "spatial_files")
 colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
 ```
@@ -113,6 +114,18 @@ nyu_poly <- st_read(path(out, "nyu_allyrs.geojson")) %>%
 nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC")))
+
+nyu_poly %>% 
+  st_transform(4326) %>% 
+  st_write(dsn = path(web_path, "nyu_allyrs.geojson"),
+           delete_dsn = T,
+           append = F)
+
+nyu_pts %>% 
+  st_transform(4326) %>% 
+  st_write(dsn = path(web_path, "nyu_allyrs_pts.geojson"),
+           delete_dsn = T,
+           append = F)
 ```
 
 ```{r}

@@ -8,7 +8,6 @@ maplibregl.accessToken = 'pk.eyJ1Ijoiamdvc2NpYWsiLCJhIjoiY2t3cG5vanB5MGVwMjJuczJ
 
 var map = new maplibregl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/dark-v10',
     center: [-73.9973, 40.7309],
     zoom: 14
 });
@@ -50,7 +49,7 @@ function filterBy(year) {
 
 map.on('load',function(){
   // define a 'source' for your point dataset
-  map.addSource('nyu_data',{
+  map.addSource('streets',{
     'type':'geojson',
     'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_allyrs.geojson"
   });
