@@ -8,32 +8,36 @@ maplibregl.accessToken = 'pk.eyJ1Ijoiamdvc2NpYWsiLCJhIjoiY2t3cG5vanB5MGVwMjJuczJ
 
 var map = new maplibregl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/dark-v10',
+    style: 'mapbox://styles/jgosciak/ckwzxbhb906w215ogejsxdw24',
     center: [-73.9973, 40.7309],
-    zoom: 14
+    zoom: 12
 });
 
 const years = [
-2002,
-2003,
-2004,
-2005,
-2006,
-2007,
-2008,
-2009,
-2010,
-2011,
-2012,
-2013,
-2014,
-2015,
-2016,
-2017,
-2018,
-2019,
-2020,
-2021
+  1998,
+  1999,
+  2000,
+  2001,
+  2002,
+  2003,
+  2004,
+  2005,
+  2006,
+  2007,
+  2008,
+  2009,
+  2010,
+  2011,
+  2012,
+  2013,
+  2014,
+  2015,
+  2016,
+  2017,
+  2018,
+  2019,
+  2020,
+  2021
 ];
 
 function filterBy(year) {
@@ -45,28 +49,26 @@ function filterBy(year) {
 }
 
 map.on('load',function(){
+
   // define a 'source' for your point dataset
   map.addSource('nyu_data',{
     'type':'geojson',
-    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_filt.geojson"
+    'data': "https://raw.githubusercontent.com/jennahgosciak/nyu_ownership/gh-pages/04_WebMap/data/nyu_allyrs.geojson"
   });
   // add a new layer with your points
   map.addLayer({
     'id':'nyu',
-    'type':'circle',
+    'type':'fill',
     'source':'nyu_data',
+    'layout': {},
     'paint':{
-      'circle-radius': [
-        '/',
-        ['get', 'assessed_adj'], 2000000],
-      'circle-color': '#531C86',
-      'circle-opacity':0.7
+      'fill-color': "#9057FF"
     },
   })
 
   // Set filter to first year
   // 0 = January
-  filterBy(2002);
+  filterBy(1998);
 
   document.getElementById('slider').addEventListener('input', (e) => {
   const yr = parseInt(e.target.value, 10);
@@ -84,7 +86,7 @@ map.on('click', 'nyu', function(e) {
 
   // and create a popup on the map
   new maplibregl.Popup()
-  .setLngLat(coordinates)
+  .setLngLat(e.lngLat)
   .setHTML(`<table>
               <tr>
               <td>Owner</td>
