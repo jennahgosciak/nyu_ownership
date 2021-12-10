@@ -14,6 +14,7 @@ var map = new maplibregl.Map({
 });
 
 const years = [
+  1997,
   1998,
   1999,
   2000,
@@ -46,7 +47,6 @@ function filterBy(year) {
 
   // Set the label to the month
   document.getElementById('year').textContent = years[years.indexOf(year)];
-  document.getElementById('tax_calc').textContent = map.map.queryRenderedFeatures({layers: ['nyu_data']});
 }
 
 map.on('load',function(){
@@ -67,15 +67,22 @@ map.on('load',function(){
     },
   })
 
-  // Set filter to first year
-  // 0 = January
-  filterBy(1998);
+  // Set filter to 1998
+  filterBy(1997);
 
   document.getElementById('slider').addEventListener('input', (e) => {
   const yr = parseInt(e.target.value, 10);
   filterBy(yr);
   });
+
 });
+
+map.on("sourcedata", function(e) {
+        // without this, will have many many event fired.
+        if (map.areTilesLoaded()){
+            document.getElementById('tax_calc').textContent = map.queryRenderedFeatures({layers: ['nyu']})[0].properties.taxes_yr;
+        }
+    })
 
 // when the user does a 'click' on an element in the 'trees' layer...
 map.on('click', 'nyu', function(e) {
