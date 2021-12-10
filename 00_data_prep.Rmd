@@ -63,6 +63,11 @@ Also runs other data-intensive tasks from the Furman database
 
 ## Load earlier RPAD Files
 ```{r}
+tbl(con, "rpad_raw") %>% 
+  filter(year4 == 1999)
+```
+
+```{r}
 rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,
                       m.geom_point FROM rpad_raw as r
                       LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl

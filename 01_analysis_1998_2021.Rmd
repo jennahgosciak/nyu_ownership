@@ -358,6 +358,14 @@ nyu_df <- nyu_poly %>%
   mutate(geom_point = geometry)
 
 nyu_df
+
+nyu_df %>% 
+  filter(year == 1999)
+
+nyu_df %>% 
+  filter(bbl == "1009364222") %>% 
+  as_tibble() %>% 
+  select(c("year"), everything())
 ```
 ```{r}
 # number of buildings by year
@@ -412,9 +420,11 @@ nyu_assess_value <- nyu_df %>%
   group_by(year) %>% 
   mutate(taxes_yr = sum(taxes_calc, na.rm = T)) %>% 
   ungroup() %>% 
-  mutate(bldgarea = if_else(is.na(bldgarea), 
-                            floorarea, as.double(bldgarea))) %>%
-  mutate(assessed_value = bldgarea * avg_value_sqft) %>% 
+  mutate(bldgarea = case_when(is.na(bldgarea) | bldgarea == 0 ~ floorarea,
+                              TRUE ~ as.double(bldgarea))) %>%
+  mutate(assessed_value = if_else(is.na(bldgarea) | bldgarea == 0, 
+                                  lotarea * avg_value_sqft,
+                                  bldgarea * avg_value_sqft)) %>% 
   mutate(borough = recode(borough, "3" = "Brooklyn", "1" = "Manhattan",
                           "2" = "Bronx", "5" = "Staten Island",
                           "4" = "Queens")) %>% 
@@ -447,20 +457,39 @@ nyu_assess_geo <- nyu_assess_value  %>%
                 "assessed_adj_orig",
                 "taxes_yr",
                 "taxes_calc",
-                "bldgarea"), ~prettyNum(., big.mark = ","))) %>% 
-  mutate(across(c("assessed_adj",
-                "assessed_adj_orig",
-                "taxes_yr",
-                "taxes_calc",
-                "bldgarea",
-                "address",
-                "ownername"), ~if_else(is.na(.) | is.inf(.), "", as.character(.)))) %>% 
+                "bldgarea"), ~if_else(is.na(.) | is.infinite(.), "", prettyNum(., big.mark = ",")))) %>% 
+  mutate(across(c("address",
+                "ownername"), ~if_else(is.na(.) | is.infinite(.), "", .))) %>% 
   mutate(across(c("assessed_adj",
                 "assessed_adj_orig",
                 "taxes_yr",
                 "taxes_calc"), ~str_c("$",.)))
 
+nyu_assess_geo
+ 
+fix_geom <- nyu_assess_geo %>% 
+  filter(st_is_empty(geometry)) %>% 
+  as_tibble() %>% 
+  select(-"geometry") %>% 
+  left_join(mutate(nyu_assess_geo, year = year - 1) %>% 
+              select(c("year", "geometry")) %>% 
+              bind_rows(mutate(nyu_assess_geo, year = year - 3) %>% 
+              select(c("year", "geometry"))), by = "year", suffix = c("orig", "new"))
+  
+nyu_assess_geo %>% 
+  filter(st_is_empty(geometry)) %>% 
+  nrow() 
+
+fix_geom <- fix_geom %>% 
+    filter(!st_is_empty(geometry)) %>% 
+    group_by(bbl, year) %>% 
+    filter(row_number() == 1)
+fix_geom
+
 nyu_assess_geo %>%
+  filter(st_is_empty(geometry)) %>% 
+  bind_rows(fix_geom) %>% 
+  st_set_geometry(geometry) %>% 
   st_write(
     dsn = path(
       "04_WebMap",
@@ -470,12 +499,6 @@ nyu_assess_geo %>%
     append = F,
     delete_dsn = T
   )
-
-nyu_assess_geo
-
-tbl(con, "mappluto_05d") %>% 
-  filter(str_detect(ownername, "POLYTECHNIC")) %>% 
-  select(c("ownername"), everything())
 ```
 ## Assessed value over time
 ```{r}
