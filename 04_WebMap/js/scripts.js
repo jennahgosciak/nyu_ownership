@@ -82,7 +82,11 @@ map.on('click', 'nyu', function(e) {
   var coordinates = e.features[0].geometry.coordinates.slice();
   // get its species name from the feature's attributes
   var owner = e.features[0].properties.ownername;
+  var address = e.features[0].properties.address;
   var value = e.features[0].properties.assessed_adj;
+  var value_orig = e.features[0].properties.assessed_adj_orig;
+  var bldgarea = e.features[0].properties.bldgarea;
+  var tax = e.features[0].properties.taxes_calc;
 
   // and create a popup on the map
   new maplibregl.Popup()
@@ -93,8 +97,24 @@ map.on('click', 'nyu', function(e) {
               <td>${owner}</td>
               </tr>
               <tr>
-              <td>Assessed value (adj. for 2021)</td>
+              <td>Address (if available)</td>
+              <td>${address}</td>
+              </tr>
+              <tr>
+              <td>Estimated assessed value</td>
               <td>${value}</td>
+              </tr>
+              <tr>
+              <td>City reported assessed value</td>
+              <td>${value_orig}</td>
+              </tr>
+              <tr>
+              <td>Building sq. ft.</td>
+              <td>${bldgarea}</td>
+              </tr>
+              <tr>
+              <td>Estimated taxes</td>
+              <td>${tax}</td>
               </tr>
               </table>`)
   .addTo(map);
