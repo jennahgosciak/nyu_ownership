@@ -420,6 +420,9 @@ nyu_assess_value <- nyu_df %>%
                           "4" = "Queens")) %>% 
   mutate(assessed_adj = if_else(year < 2021,
                                 round(assessed_value * conv),
+                                assessed_value),
+         assessed_adj_orig = if_else(year < 2021,
+                                round(assessed_value_orig * conv),
                                 assessed_value))
 
 nyu_assess_geo <- nyu_assess_value  %>% 
@@ -428,12 +431,17 @@ nyu_assess_geo <- nyu_assess_value  %>%
                               TRUE ~ bldgarea)) %>% 
   select(
     "ownername", "year", "assessed_adj",
-    "assessed_value_orig",
+    "assessed_adj_orig",
     matches("area"),
-    "geom_point", "cd",
+    "cd",
     "address", "bbl", "borough",
     "taxes_yr", "taxes_calc", 
-    matches("area")
+    matches("area")) %>% 
+  mutate(across(c("assessed_adj",
+                "assessed_adj_orig",
+                "taxes_yr",
+                "taxes_calc",
+                "bldgarea"), ~prettyNum(., big.mark = ",")))
 
 nyu_assess_geo %>%
   st_write(
