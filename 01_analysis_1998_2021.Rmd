@@ -423,7 +423,13 @@ nyu_assess_value <- nyu_df %>%
                                 assessed_value),
          assessed_adj_orig = if_else(year < 2021,
                                 round(assessed_value_orig * conv),
-                                assessed_value))
+                                assessed_value_orig),
+         taxes_calc = if_else(year < 2021,
+                              round(taxes_calc * conv),
+                              taxes_calc),
+         taxes_yr = if_else(year < 2021,
+                            round(taxes_yr * conv),
+                            taxes_yr))
 
 nyu_assess_geo <- nyu_assess_value  %>% 
   st_transform(4326) %>%
@@ -455,6 +461,8 @@ nyu_assess_geo %>%
   )
 
 nyu_assess_geo
+
+tbl(con, "mappluto_05d")
 ```
 ## Assessed value over time
 ```{r}
