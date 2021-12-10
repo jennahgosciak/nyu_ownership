@@ -235,14 +235,14 @@ nyu_21 %>%
   summarize(nyu_lotarea = sum(lotarea, na.rm = T),
             nyu_bldgarea = sum(bldgarea, na.rm = T))
   
-nyu_21 %>% 
-  filter(bldgclass %in% c("W5", "W6")) %>% 
-  as_tibble() %>% 
-  summarize(nyu_lotarea = sum(lotarea, na.rm = T),
-            nyu_bldgarea = sum(bldgarea, na.rm = T)) %>% 
-  cbind(total_lotarea) %>% 
-  mutate(nyu_lotshare = nyu_lotarea * 100 / total_lotarea,
-         nyu_bldgshare = nyu_bldgarea * 100 / total_bldgarea)
+# nyu_21 %>% 
+#   filter(bldgclass %in% c("W5", "W6")) %>% 
+#   as_tibble() %>% 
+#   summarize(nyu_lotarea = sum(lotarea, na.rm = T),
+#             nyu_bldgarea = sum(bldgarea, na.rm = T)) %>% 
+#   cbind(total_lotarea) %>% 
+#   mutate(nyu_lotshare = nyu_lotarea * 100 / total_lotarea,
+#          nyu_bldgshare = nyu_bldgarea * 100 / total_bldgarea)
 
 nyu_21 %>% 
   filter(landuse %in% c("01", "02", "03", "04")) %>% 
@@ -447,7 +447,18 @@ nyu_assess_geo <- nyu_assess_value  %>%
                 "assessed_adj_orig",
                 "taxes_yr",
                 "taxes_calc",
-                "bldgarea"), ~prettyNum(., big.mark = ",")))
+                "bldgarea"), ~prettyNum(., big.mark = ","))) %>% 
+  mutate(across(c("assessed_adj",
+                "assessed_adj_orig",
+                "taxes_yr",
+                "taxes_calc",
+                "bldgarea",
+                "address",
+                "ownername"), ~if_else(is.na(.) | is.inf(.), "", as.character(.)))) %>% 
+  mutate(across(c("assessed_adj",
+                "assessed_adj_orig",
+                "taxes_yr",
+                "taxes_calc"), ~str_c("$",.)))
 
 nyu_assess_geo %>%
   st_write(
@@ -462,7 +473,9 @@ nyu_assess_geo %>%
 
 nyu_assess_geo
 
-tbl(con, "mappluto_05d")
+tbl(con, "mappluto_05d") %>% 
+  filter(address == "1 WASHINGTON SQ VLLGE") %>% 
+  select(c("ownername"), everything())
 ```
 ## Assessed value over time
 ```{r}
