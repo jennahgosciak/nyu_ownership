@@ -463,9 +463,10 @@ nyu_assess_geo <- nyu_assess_value  %>%
   mutate(across(c("assessed_adj",
                 "assessed_adj_orig",
                 "taxes_yr",
-                "taxes_calc"), ~str_c("$",.)))
+                "taxes_calc"), ~if_else(. != "", str_c("$",.), "")))
 
-nyu_assess_geo
+nyu_assess_geo %>% 
+  filter(year == 1997)
  
 fix_geom <- nyu_assess_geo %>% 
   filter(st_is_empty(geometry)) %>% 
