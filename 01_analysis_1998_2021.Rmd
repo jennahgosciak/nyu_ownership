@@ -141,9 +141,9 @@ boro <- st_read(url_boro) %>%
   st_transform(2263)
 
 # load major streets
-streets <- st_read(url_streets) %>% 
-  st_transform(2263)
-nrow(streets)
+# streets <- st_read(url_streets) %>% 
+#   st_transform(2263)
+# nrow(streets)
 
 # load cds
 cds <- st_read(url_cds)  %>% 
@@ -222,13 +222,13 @@ nyu_poly %>%
   select(c("cd", "bbl", "ownername", "address"), everything()) %>% 
   verify(!is.na(bldgarea)) %>% 
   filter(cd == 307)
-
-total_lotarea <- tbl(con, "mappluto_21v3") %>% 
-  filter(bldgclass %in% c("W5", "W6")) %>% 
-  summarize(total_lotarea = sum(lotarea, na.rm = T),
-            total_bldgarea = sum(bldgarea, na.rm = T)) %>% 
-  as_tibble()
-total_lotarea
+# 
+# total_lotarea <- tbl(con, "mappluto_21v3") %>% 
+#   filter(bldgclass %in% c("W5", "W6")) %>% 
+#   summarize(total_lotarea = sum(lotarea, na.rm = T),
+#             total_bldgarea = sum(bldgarea, na.rm = T)) %>% 
+#   as_tibble()
+# total_lotarea
 
 nyu_21 %>% 
   as_tibble() %>% 
@@ -355,8 +355,7 @@ expt_cd <- function(cds, shp, cd_num, yr) {
 # create a dataframe of the properties
 nyu_df <- nyu_poly %>% 
   select(-any_of(drop_vars)) %>% 
-  mutate(geom_point = geometry) %>% 
-  st_set_geometry(NULL)  
+  mutate(geom_point = geometry)
 
 nyu_df
 ```
@@ -378,25 +377,40 @@ nyu_df %>%
   tablist_qc(ownername)
 ```
 
-
 ```{r}
+# Class 4: All commercial and industrial properties, such as office, retail, factory buildings and all other properties not 
+# included in tax classes 1, 2 or 3.
+
+## Load tax rate
+tax_rate <- read_csv(path(inp, "Property_Tax_Rates_by_Tax_Class.csv")) %>% 
+  select(c("YEAR", "CLASS 4")) %>% 
+  rename(year = YEAR) %>% 
+  filter(!is.na(year)) %>% 
+  mutate(rate = as.numeric(str_replace_all(`CLASS 4`, "%", ""))/100)
+tax_rate
+```
+
+
+```{r, warning = F}
 # load assessed_value_avg
 assessed_value_avg <- readRDS(path(out, "assess_value_averages.RDS"))
 
 nrow(nyu_df)
 
 nyu_assess_value <- nyu_df %>%
-  select("bbl", "cd", "year", matches("assess"),
-         "bldgarea", "geom_point", "floorarea",
-         "ownername", "address", "borough") %>% 
   mutate(borough = str_sub(cd, 1, 1),
            cd = as.numeric(cd)) %>% 
   left_join(conversion_factors, by = "year") %>% 
   left_join(assessed_value_avg, by = c("cd", "year")) %>% 
+  left_join(tax_rate, by = "year") %>% 
   rowwise() %>%
-  mutate(assessed_value_orig = max_noinf(assesstotl, 
+  mutate(assessed_value_orig = max(assesstotl, 
                                    assesstota, 
-                                   assesstot)) %>% 
+                                   assesstot, na.rm = T)) %>% 
+  ungroup() %>% 
+  mutate(taxes_calc = rate * assessed_value_orig) %>% 
+  group_by(year) %>% 
+  mutate(taxes_yr = sum(taxes_calc, na.rm = T)) %>% 
   ungroup() %>% 
   mutate(bldgarea = if_else(is.na(bldgarea), 
                             floorarea, as.double(bldgarea))) %>%
@@ -404,19 +418,22 @@ nyu_assess_value <- nyu_df %>%
   mutate(borough = recode(borough, "3" = "Brooklyn", "1" = "Manhattan",
                           "2" = "Bronx", "5" = "Staten Island",
                           "4" = "Queens")) %>% 
-  ungroup() %>%
   mutate(assessed_adj = if_else(year < 2021,
                                 round(assessed_value * conv),
                                 assessed_value))
 
 nyu_assess_geo <- nyu_assess_value  %>% 
-  st_set_geometry("geom_poly") %>%
   st_transform(4326) %>%
+  mutate(bldgarea = case_when(is.na(bldgarea) ~ floorarea,
+                              TRUE ~ bldgarea)) %>% 
   select(c(
     "ownername", "year", "assessed_adj",
-    "bldgarea", "floorarea", 
+    "assessed_value_orig",
+    matches("area"),
     "geom_point", "cd",
     "address", "bbl", "borough",
+    "taxes_yr", "taxes_calc",
+    matches("land"),
   ), starts_with("assess"), 
   matches("area"))
 
@@ -429,6 +446,8 @@ nyu_assess_geo %>%
     append = F,
     delete_dsn = T
   )
+
+nyu_assess_geo
 ```
 ## Assessed value over time
 ```{r}

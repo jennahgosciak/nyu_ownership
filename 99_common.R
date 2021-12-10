@@ -1,5 +1,5 @@
 max_noinf <- function(...) {
-  if (any(unlist(map(..., ~!is.na(.))))) {
+  if (sum(unlist(map(..., ~!is.na(.)))) > 0) {
     max(..., na.rm = T)
   } else{
     return(NA)
