@@ -81,8 +81,8 @@ rpad_filt <- rpad_lt2002 %>%
            "owner", "geom_poly", "geom_point")) %>% 
   rename(bldgarea = gr_sqft,
          year = year4,
-         ownername = owner) 
-  
+         ownername = owner,
+         bldgclass = bldgcl) 
 
 rpad_lt2002 %>% 
   st_set_geometry("geom_poly") %>% 
@@ -192,7 +192,9 @@ extract_nyu <- function(con, tblname, yr, out_path = out) {
            matches("cd"),
            matches("assess"),
            matches("yearbuilt"),
-           matches("address"), "bbl",
+           matches("address"),
+           matches("bldg"), 
+           matches("land"), "bbl",
            "year",
            "geom_poly",
            "geom_point")

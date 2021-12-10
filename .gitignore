@@ -18,6 +18,7 @@
 00_Georeferencing/
 !04_WebMap/
 03_Output/*
+!03_Output/nyu_21.geojson
 01_Input/
 
 # History files
