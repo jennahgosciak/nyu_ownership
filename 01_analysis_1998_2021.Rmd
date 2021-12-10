@@ -156,6 +156,8 @@ parks <- st_read(url_parks) %>%
 # load nhood
 nhood <- st_read(url_nhood)  %>% 
   st_transform(2263)
+
+nyu_poly
 ```
 ## NYU in 2021
 ```{r}
@@ -323,35 +325,35 @@ expt_cd <- function(cds, shp, cd_num, yr) {
 }
 
 # output all cds with nyu property in 2021
-walk(intersecting_cds, ~expt_cd(cds, nyu_poly, ., 2021))
+# walk(intersecting_cds, ~expt_cd(cds, nyu_poly, ., 2021))
 ```
 ```{r}
-nyu_21 %>% 
-  ggplot() +
-  geom_sf(data = streets,
-          color = "white", size = 0.01, alpha = 0.2, fill = NA) +
-  geom_sf(data = parks,
-            fill = "#777777", color = NA) +
-  geom_sf(fill = "#9057FF", color = NA) +
-  geom_sf(data = cds, color = "#777777", fill = NA, size = 0.1) +
-  theme_void() +
-  theme(
-    panel.border = element_blank(),
-    axis.text = element_blank(),
-    panel.grid = element_blank(),
-    axis.ticks = element_blank(),
-    plot.background = element_rect(fill = '#A5A5A5', color = NA),
-    panel.background = element_rect(fill = '#A5A5A5', color = NA)
-  )
-
-ggsave(path(fig_path, "nyu_21_map.pdf"), height = 12.5, width = 24)
-#ggsave(path(fig_path, "nyu_21_map.png"), height = 12.5, width = 20)
+# nyu_21 %>% 
+#   ggplot() +
+#   geom_sf(data = streets,
+#           color = "white", size = 0.01, alpha = 0.2, fill = NA) +
+#   geom_sf(data = parks,
+#             fill = "#777777", color = NA) +
+#   geom_sf(fill = "#9057FF", color = NA) +
+#   geom_sf(data = cds, color = "#777777", fill = NA, size = 0.1) +
+#   theme_void() +
+#   theme(
+#     panel.border = element_blank(),
+#     axis.text = element_blank(),
+#     panel.grid = element_blank(),
+#     axis.ticks = element_blank(),
+#     plot.background = element_rect(fill = '#A5A5A5', color = NA),
+#     panel.background = element_rect(fill = '#A5A5A5', color = NA)
+#   )
+# 
+# ggsave(path(fig_path, "nyu_21_map.pdf"), height = 12.5, width = 24)
+# #ggsave(path(fig_path, "nyu_21_map.png"), height = 12.5, width = 20)
 ```
 
 
 ```{r}
 # create a dataframe of the properties
-nyu_df <- nyu_pluto_app %>% 
+nyu_df <- nyu_poly %>% 
   select(-any_of(drop_vars)) %>% 
   mutate(geom_point = geometry) %>% 
   st_set_geometry(NULL)  
@@ -408,7 +410,7 @@ nyu_assess_value <- nyu_df %>%
                                 assessed_value))
 
 nyu_assess_geo <- nyu_assess_value  %>% 
-  st_set_geometry("geom_point") %>%
+  st_set_geometry("geom_poly") %>%
   st_transform(4326) %>%
   select(c(
     "ownername", "year", "assessed_adj",
@@ -422,7 +424,7 @@ nyu_assess_geo %>%
   st_write(
     dsn = path(
       fig_path,
-      "nyu_filt.geojson"
+      "nyu_clean.geojson"
     ), driver = "GeoJSON",
     append = F,
     delete_dsn = T
