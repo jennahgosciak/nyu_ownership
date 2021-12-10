@@ -400,6 +400,10 @@ tax_rate
 
 
 ```{r, warning = F}
+assessed_value_avg %>% 
+  filter(year == 2021)
+```
+```{r}
 # load assessed_value_avg
 assessed_value_avg <- readRDS(path(out, "assess_value_averages.RDS"))
 
@@ -463,9 +467,10 @@ nyu_assess_geo <- nyu_assess_value  %>%
   mutate(across(c("assessed_adj",
                 "assessed_adj_orig",
                 "taxes_yr",
-                "taxes_calc"), ~str_c("$",.)))
+                "taxes_calc"), ~if_else(. != "", str_c("$",.), "")))
 
-nyu_assess_geo
+nyu_assess_geo %>% 
+  filter(year == 2021)
  
 fix_geom <- nyu_assess_geo %>% 
   filter(st_is_empty(geometry)) %>% 
@@ -483,13 +488,14 @@ nyu_assess_geo %>%
 fix_geom <- fix_geom %>% 
     filter(!st_is_empty(geometry)) %>% 
     group_by(bbl, year) %>% 
-    filter(row_number() == 1)
+    filter(row_number() == 1) %>%
+    st_as_sf()
 fix_geom
 
-nyu_assess_geo %>%
-  filter(st_is_empty(geometry)) %>% 
+
+nyu_assess_geo %>% 
+  filter(!st_is_empty(geometry)) %>% 
   bind_rows(fix_geom) %>% 
-  st_set_geometry(geometry) %>% 
   st_write(
     dsn = path(
       "04_WebMap",
