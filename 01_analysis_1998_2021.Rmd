@@ -490,7 +490,7 @@ fix_geom
 
 
 nyu_assess_geo %>% 
-  filter(st_is_empty(geometry)) %>% 
+  filter(!st_is_empty(geometry)) %>% 
   bind_rows(fix_geom) %>% 
   st_write(
     dsn = path(
