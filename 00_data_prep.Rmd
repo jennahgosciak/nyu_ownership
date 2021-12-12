@@ -1,0 +1,495 @@
+---
+title: "Exploratory analysis"
+author: "Jennah Gosciak"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(inputFile,
+  encoding=encoding,
+  output_file="00_data_prep.html")})
+output:
+  html_document:
+    toc: true
+    theme: paper
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = F, warning = F,
+  fig.width = 6, fig.height = 10
+)
+```
+
+```{r, setup2, include = F}
+# Setup
+library(renv)
+library(tidyverse)
+library(janitor)
+library(magrittr)
+library(eeptools)
+library(assertr)
+library(readr)
+library(openxlsx)
+library(DBI)
+library(dplyr)
+library(dbplyr)
+library(RPostgres)
+library(lubridate)
+library(fs)
+library(sf)
+library(vroom)
+library(leaflet)
+library(haven)
+
+
+# DB Connection
+con <- dbConnect(Postgres(),
+  user = "furmandata",
+  password = rstudioapi::askForPassword(),
+  host = "fcdata.c7h93yqbqnvu.us-east-1.rds.amazonaws.com",
+  port = 5432,
+  dbname = "fcdata",
+  bigint = "integer"
+)
+
+source("99_common.R")
+out <- "03_Output"
+inp <- "01_Input"
+fig_path <- path("03_Output", "figs")
+colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
+```
+
+# Analysis: 1998-2021
+Purpose: to create a cleaned file of NYU properties 1998-2021
+Also runs other data-intensive tasks from the Furman database
+
+```{r}
+tbl(con, "rpad_raw") %>% 
+  filter(year4 == 2000)
+```
+
+## Load earlier RPAD Files
+```{r}
+rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,
+                      m.geom_point FROM rpad_raw as r
+                      LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
+                      WHERE r.year4 < 2002 AND
+                      r.owner ~* 
+                    '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)'")
+```
+```{r}
+# select only relevant vars
+rpad_filt <- rpad_lt2002 %>% 
+  select(c("bble", "bbl", "bbl_condo",  "cd_rpad",
+            "cd", "bldgcl", "exmtcl",
+           "owner", "hnum_lo", "hnum_hi", "str_name",
+           "zip", "tot_unit", "res_unit", "bldgs",
+           "lnd_area", "gr_sqft", "zoning", "yrb", "year4",
+           "owner", "geom_poly", "geom_point",
+           "hnum_lo", "hnum_hi", "str_name", "zip")) %>% 
+  rename(bldgarea = gr_sqft,
+         year = year4,
+         ownername = owner,
+         bldgclass = bldgcl) 
+
+rpad_lt2002 %>% 
+  st_set_geometry("geom_poly") %>% 
+  st_transform(2263) %>% 
+  select(-"geom_point") %>% 
+  st_write(dsn = path(out, "rpad_nyu.geojson"), driver = "GeoJSON",
+           append = F,
+           delete_dsn = T)
+
+rpad_lt2002 %>% 
+  filter(st_is_empty("geom_poly")) %>% 
+  nrow()
+```
+
+```{r}
+# TEMP CODE
+rpad_lt2002 <- st_read(path(out, "rpad_nyu.geojson"))
+rpad_lt2002 %>% 
+  tablist_qc(year4)
+
+
+nyu_pluto <- st_read(path(out, "nyu_allyrs.geojson")) %>% 
+  filter(year > 2001) %>% 
+  as_tibble()
+
+unmerged_rpad <- rpad_lt2002 %>% 
+  as_tibble() %>% 
+  anti_join(nyu_pluto, ., by = "bbl") %>% 
+  select(c("bbl", "address", "ownername", "yearbuilt")) %>% 
+  filter(yearbuilt < 2002) %>% 
+  unique()
+unmerged_rpad
+
+bbl_list <- c("1009627501")
+# 16 cooper sq, bought in 2004
+# 120 east 12th st, the church
+
+# 238 thompson street
+# bought in 2009 from the archdiocese
+
+# 60 5th avenue
+# bought in 2010
+
+# 433 EAST 30 STREET
+# 1992 or 1998?
+
+# 315 JAY ST WAS POLYTECHNIC
+
+# 101 tech place
+# was polytechnic
+
+# 383 lafayette, lease in 2003
+# deed in 2013
+
+# 31 3rd avenue
+# bought in 1984
+
+# 467 3rd avenue
+# bought in 1984
+
+nyu_pluto %>% 
+  filter(cd == 208) %>% 
+  select(c("ownername", "address", "year", "yearbuilt", "bbl")) %>% 
+  arrange(year)
+```
+## Try to identify some properties that aren't merging bc of missing data
+```{r}
+rpad_lt2002 <- rpad_lt2002 %>% 
+  as_tibble() %>% 
+  select(-"geometry")
+
+copy_to(con, rpad_lt2002,
+  name = "rpad_lt2002", overwrite = T,
+  temporary = T
+)
+
+rpad_check <- st_read(con, query = "SELECT r.* FROM rpad_raw as r
+                      INNER JOIN rpad_lt2002 as unmgd on coalesce(r.bbl, r.bble, r.bbl_condo) = unmgd.bbl
+                      LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
+                      WHERE r.year4 < 2002 and r.year4 > 1996")
+
+rpad_check %>% 
+  select(c("owner", "bbl", "str_name"))
+
+rpad_check %>% 
+  st_write(dsn = path(out, "rpad_unmerged.geojson"),
+           append = F,
+           dsn_delete = T)
+```
+```{r}
+rpad_unmerged <- st_read(path(out, "rpad_unmerged.geojson")) %>% 
+  filter(is.na(owner)) %>% 
+  #filter(is.na(owner) & str_sub(exmtcl, 1, 1) == "X") %>% 
+  mutate(l_acre = as.character(l_acre),
+         bld_var = as.character(bld_var),
+         ex_chgdt = as.character(ex_chgdt))
+
+rpad_unmerged %>% 
+  tablist_qc(year4)
+
+rpad_unmerged %>% 
+  tablist_qc(owner)
+
+rpad_final <- rpad_lt2002 %>% 
+  as_tibble() %>% 
+  bind_rows(rpad_unmerged %>% 
+              as_tibble()) %>% 
+  unique()  %>% 
+  rename(bldgarea = gr_sqft,
+         year = year4,
+         ownername = owner,
+         bldgclass = bldgcl) %>% 
+  select(-c("bble", "ease")) %>% 
+  group_by(bbl, year) %>% 
+  mutate(drop_row = case_when(n() > 1 & !is.na(ownername) ~ 0,
+                              n() == 1 ~ 0,
+                              TRUE ~ 1)) %>% 
+  filter(drop_row == 0) 
+
+rpad_final %>% 
+  as_tibble() %>% 
+  verify(!is.na(year))
+
+rpad_final %>% 
+  tablist_qc(year)
+
+rpad_final %>% 
+  as_tibble() %>% 
+  verify_isid(c("bbl", "year"))
+
+## TEMP CODE combine
+nyu_upd <- bind_rows(as_tibble(nyu_pluto), rpad_final) %>% 
+  st_as_sf()
+
+nyu_upd %>% 
+  tablist_qc(year)
+
+rpad_final %>% 
+  verify(!is.na(year)) %>% 
+  tablist_qc(year)
+
+st_write(st_as_sf(rpad_final) %>% 
+           select(-"drop_row"), dsn = path(out, "rpad_upd.geojson"),
+         append = F,
+         dsn_delete = T)
+
+st_write(nyu_upd, dsn = path(out, "nyu_allyrs_upd.geojson"),
+         append = F,
+         dsn_delete = T)
+```
+
+
+
+## Load 2008 PLUTO File (not on Furman Database)
+```{r}
+boros <- c("Manhattan", "Brooklyn", "Queens", "Bronx",
+           "Staten_Island")
+abbs <- c("MN", "BK", "QN", "BX", "SI")
+# load 2008 data
+pluto2008 <- map2_dfr(boros, abbs,
+                      ~st_read(path(inp, "mappluto_08b", 
+                                    "mappluto_08b", .x, paste0(.y, "MapPLUTO.shp"))))  %>% 
+  mutate(year = 2008)
+
+# convert lowercase
+lowernames <- names(pluto2008) %>% 
+  str_to_lower()
+names(pluto2008) <- lowernames
+
+# pull out assessed value
+pluto2008_assessed_value <- pluto2008 %>% 
+  as_tibble() %>% 
+    rename_at(vars(starts_with("assesstot")), ~"assessed_value") %>% 
+    rename_at(vars(starts_with("cd")), ~"cd") %>%
+    rename_at(vars(starts_with("floorarea")), ~"bldgarea") %>% 
+    rename_at(vars(starts_with("landuse")), ~"landuse") %>% 
+    # filter for mixed commercial or commercial and office buildings
+    filter(landuse == "04" | landuse == "05") %>% 
+    group_by(cd) %>% 
+    mutate(value_sqft = if_else(bldgarea > 0, assessed_value / bldgarea, NA_real_)) %>% 
+    summarize(avg_value_sqft = round(mean(value_sqft, na.rm = T), 2)) %>% 
+    mutate(year = 2008)
+pluto2008_assessed_value
+```
+```{r}
+# filter out unncessary vars
+pluto2008_nyu <- pluto2008 %>% 
+    filter(str_detect(ownername, '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)'),
+         ownername != 'NYU, SOON KEAT') %>% 
+    mutate(geom_poly = geometry,
+           geom_point = st_centroid(geometry)) %>% 
+    select("ownername", matches("area"),
+           matches("cd"),
+           matches("assess"),
+           matches("yearbuilt"),
+           matches("address"), "bbl",
+           "year",
+           "geom_poly",
+           "geom_point") %>% 
+  mutate(bbl = as.character(bbl)) %>% 
+  st_set_geometry("geom_poly") %>% 
+  select(-"geometry") 
+
+pluto2008_nyu
+
+nrow(pluto2008_nyu)
+```
+
+## Load all other PLUTO Files
+```{r}
+check_extract <- function(con, tblname) {
+  df1 <- tbl(con, tblname) %>%
+    mutate(ownername = str_replace_all(ownername, "[:punct:]", "")) %>%
+    filter(str_detect(ownername, "NEW YORK UNI")) %>%
+    select(ownername) %>%
+    as_tibble() %>%
+    unique()
+
+  df2 <- tbl(con, tblname) %>%
+    mutate(ownername = str_replace_all(ownername, "[:punct:]", "")) %>%
+    filter(str_detect(ownername, "NYU")) %>%
+    select(ownername) %>%
+    as_tibble() %>%
+    unique()
+
+  bind_rows(df1, df2)
+}
+
+extract_nyu <- function(con, tblname, yr, out_path = out) {
+  print(paste0("Loading table for: ", tblname))
+  
+  nyu_pluto <- st_read(con, query = paste0(
+    "SELECT * FROM ", tblname,
+    " WHERE (ownername ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)'
+                  AND ownername != 'NYU, SOON KEAT') OR bbl = '1005330001'"
+  )) %>%
+    mutate(year = yr)
+  
+  lower_names <- str_to_lower(names(nyu_pluto))
+  names(nyu_pluto) <- lower_names
+  
+  nyu_pluto <- nyu_pluto %>% 
+    select("ownername", matches("area"),
+           matches("cd"),
+           matches("assess"),
+           matches("yearbuilt"),
+           matches("address"),
+           matches("bldg"), 
+           matches("land"), "bbl",
+           "year",
+           "geom_poly",
+           "geom_point")
+    
+  nyu_pluto %>%
+    nrow()
+
+  nyu_pluto %>%
+    tablist_qc(ownername)
+
+  return(nyu_pluto)
+}
+```
+```{r}
+tbls <- dbListTables(con)
+tbls[str_detect(tbls, "pluto") & str_detect(tbls, "09")]
+
+tblnames <- c(
+  "mappluto_02b", "mappluto_03c", "mappluto_04c", "mappluto_05d",
+  "mappluto_06c", "mappluto_07c", "mappluto_09v2",
+  "mappluto_10v2", "mappluto_11v2",
+  "mappluto_12v2", "mappluto_13v2", "mappluto_14v2", "mappluto_15v1",
+  "mappluto_16v2", "mappluto_17v1_1", "mappluto_18v2", "mappluto_19v2",
+  "mappluto_20v1", "mappluto_21v3"
+)
+
+years <- c(2002:2007, 2009:2021)
+nyu_pluto_full <- map2(tblnames, years, ~ extract_nyu(con, .x, .y))
+```
+```{r}
+nyu_pluto_app <- bind_rows(nyu_pluto_full, pluto2008_nyu, rpad_filt)
+nyu_pluto_app
+
+nyu_21 <- extract_nyu(con, "mappluto_21v3", 2021)
+nyu_21
+```
+
+Export output
+```{r}
+drop_vars <- c("shape_area",
+               "strgearea",
+               "garagearea",
+               "retailarea",
+               "areasource",
+               "otherarea",
+               "landmark",
+               "healtharea",
+               "officearea",
+               "ind_area",
+               "comarea",
+               "landmkdate",
+               "factryarea",
+               "areasource")
+
+nyu_21 %>%
+  st_write(dsn = path(out, "nyu_21.geojson"), driver = "GeoJSON",
+           append = F,
+           delete_dsn = T)
+
+nyu_pluto_app %>%
+  st_set_geometry("geom_poly") %>% 
+  st_transform(2263) %>% 
+  select(-"geom_point") %>% 
+  select(-any_of(drop_vars)) %>% 
+  st_write(dsn = path(out, "nyu_allyrs.geojson"), driver = "GeoJSON",
+           append = F,
+           delete_dsn = T)
+
+nyu_pluto_app %>%
+  st_set_geometry("geom_point") %>% 
+  st_transform(2263) %>% 
+  select(-"geom_poly") %>% 
+  select(-any_of(drop_vars)) %>% 
+  st_write(dsn = path(out, "nyu_allyrs_pts.geojson"), driver = "GeoJSON",
+           append = F,
+           delete_dsn = T)
+```
+
+```{r}
+check_names <- map_dfr(tblnames, ~ check_extract(con, .)) %>%
+  unique()
+
+check_names %>%
+  write.xlsx(path(out, "check_names.xlsx"), overwrite = T)
+
+check_names %>%
+  anti_join(nyu_pluto_app, by = "ownername") %>%
+  write.xlsx(path(out, "check_unmg_names.xlsx"), overwrite = T)
+```
+```{r}
+bbl_unmgd <- nyu_pluto_app %>%
+  as_tibble() %>%
+  select(c("bbl")) %>%
+  unique()
+
+# duplicate list of all owner names, add year variable
+# use this to merge back onto the original file
+bbl_comb <- map_dfr(years, ~ mutate(bbl_unmgd, year = .))
+
+# use anti join to see what's not merghing
+bbl_unmgd <- bbl_comb %>%
+  anti_join(nyu_pluto_app, by = c("bbl", "year"))
+
+bbl_unmgd %>%
+  group_by(year) %>%
+  summarize(num_unmgd = n_distinct(bbl))
+
+copy_to(con, bbl_unmgd,
+  name = "bbl_unmgd", overwrite = T,
+  temporary = T
+)
+
+check_pluto <- function(con, tbl, yr) {
+  tbl(con, tbl) %>%
+    inner_join(tbl(con, "bbl_unmgd") %>%
+      filter(year == yr), by = "bbl") %>%
+    select(c("ownername", "bbl", "year")) %>%
+    as_tibble()
+}
+
+full_check <- map2_dfr(tblnames, years, ~ check_pluto(con, .x, .y))
+full_check %>%
+  write.xlsx(path(out, "unmgd_by_year.xlsx"), overwrite = T)
+```
+
+## Calculate average assessed value for all commercial buildings in a CD
+```{r}
+pluto_calc_assess_value <- function(con, tblname, yr) {
+  tbl(con, tblname) %>% 
+    rename_at(vars(starts_with("assesstot")), ~"assessed_value") %>% 
+    rename_at(vars(starts_with("cd")), ~"cd") %>%
+    rename_at(vars(starts_with("floorarea")), ~"bldgarea") %>% 
+    rename_at(vars(starts_with("landuse")), ~"landuse") %>% 
+    # filter for mixed commercial or commercial and office buildings
+    filter(landuse == "04" | landuse == "05") %>% 
+    group_by(cd) %>% 
+    mutate(value_sqft = if_else(bldgarea > 0, assessed_value / bldgarea, NA_real_)) %>% 
+    summarize(avg_value_sqft = round(mean(value_sqft, na.rm = T), 2)) %>% 
+    mutate(year = yr) %>% 
+    as_tibble() 
+}
+
+# calc average assessed value in commercial and mixed commercial buildings
+# by community district
+# use 2002 values for 1998-2001, since we don't have data for those years
+assessed_value_avg <- map2_dfr(c(rep(tblnames[1], 4),
+                                 tblnames), c(1998:2001, years), ~pluto_calc_assess_value(con, .x, .y)) 
+assessed_value_avg_2008 <- bind_rows(assessed_value_avg, pluto2008_assessed_value)
+
+assessed_value_avg_2008 %>% 
+  saveRDS(path(out, "assess_value_averages.RDS"))
+
+assessed_value_avg_2008 %>% 
+  write_csv(path(out, "assess_value_averages.csv"))
+```
