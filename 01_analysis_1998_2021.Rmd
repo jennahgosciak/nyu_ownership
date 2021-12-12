@@ -83,6 +83,7 @@ conversion_factors
 
 ## NYU Assess Value Analysis
 ```{r}
+# variables to drop later on
 drop_vars <- c("shape_area",
                "strgearea",
                "garagearea",
@@ -97,6 +98,7 @@ drop_vars <- c("shape_area",
                "landmkdate",
                "factryarea",
                "areasource")
+
 nyu_pts <- st_read(path(out, "nyu_allyrs_pts.geojson")) %>% 
   select(-any_of(drop_vars))%>%
   mutate(cd = ifelse(is.na(cd), cd2, cd),
@@ -113,7 +115,8 @@ nyu_pts <- st_read(path(out, "nyu_allyrs_pts.geojson")) %>%
                          TRUE ~ bbl)) %>% 
   mutate(address_form = case_when(!is.na(address) ~ address,
                                   TRUE ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", ")))
-nyu_poly <- st_read(path(out, "nyu_allyrs_upd.geojson")) %>% 
+
+nyu_poly <- st_read(path(out, "nyu_allyrs.geojson")) %>% 
   unique() %>% 
   select(-any_of(drop_vars))%>%
   mutate(cd = ifelse(is.na(cd), cd2, cd)) %>% 
@@ -128,6 +131,7 @@ nyu_poly <- st_read(path(out, "nyu_allyrs_upd.geojson")) %>%
   filter(!(str_detect(ownername, "POLYTECHNIC"))) %>%
   mutate(address_form = case_when(!is.na(address) ~ address,
                                   TRUE ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", ")))
+
 nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC"))) %>% 
@@ -146,6 +150,9 @@ nyu_pts %>%
   st_write(dsn = path(web_path, "nyu_allyrs_pts.geojson"),
            delete_dsn = T,
            append = F)
+
+nyu_poly %>% 
+  filter(year == 2000)
 ```
 
 ```{r}
@@ -495,6 +502,9 @@ ggsave(path(fig_path, "ranking_nbld.pdf"))
 nyu_df <- nyu_poly %>% 
   select(-any_of(drop_vars))
 nyu_df
+
+nyu_df %>% 
+  filter(year == 2000)
 ```
 ```{r}
 # number of buildings by year
@@ -657,6 +667,9 @@ nyu_assess_fix %>%
 
 nyu_assess_fix %>% 
   tablist_qc(year)
+
+nyu_assess_fix %>% 
+  filter(year == 2000)
   
 nyu_assess_fix %>%   
   st_write(
@@ -670,49 +683,10 @@ nyu_assess_fix %>%
   )
 ```
 
-# Assessed value over time
-* Due to data issues, only 2001 to 2021
+# Analysis of square footage (building or floor square footage)
 ```{r}
-# assess value over time
-nyu_assess_value %>% 
-  group_by(borough, year) %>%
-  summarize(avg_assessed_value = mean(assessed_value, na.rm = T)/1000) %>% 
-  ggplot() +
-  geom_line(aes(year, avg_assessed_value, color = borough)) +
-  #scale_y_continuous(limits = c(0, 2000)) +
-  theme_classic() +
-  labs(x = "Year",
-       y = "Average assessed value in thousands") +
-  scale_color_manual(values = colors,
-                     name = "Borough")
-ggsave(path(fig_path, "assess_value1.png"))
-nyu_assess_value %>% 
-  group_by(borough, year) %>%
-  filter(borough != "MN") %>% 
-  summarize(avg_assessed_value = mean(assessed_value, na.rm = T)/1000) %>% 
-  ggplot() +
-  geom_line(aes(year, avg_assessed_value, color = borough)) +
-  theme_classic() +
-  labs(x = "Year",
-       y = "Average assessed value in thousands") +
-  scale_color_manual(values = colors,
-                     name = "Borough")
-ggsave(path(fig_path, "assess_value2.png"))
-nyu_assess_value %>% 
-  group_by(borough, year) %>%
-  summarize(avg_assessed_value = mean(assessed_value_orig, na.rm = T)/1000) %>% 
-  ggplot() +
-  geom_line(aes(year, avg_assessed_value, color = borough)) +
-  theme_classic() +
-  labs(x = "Year",
-       y = "Average assessed value in thousands") +
-  scale_color_manual(values = colors,
-                     name = "Borough")
-ggsave(path(fig_path, "assess_value2.png"))
-```
-## Analysis of square footage (building or floor square footage)
-```{r}
-nyu_area <- nyu_pluto_app %>% 
+nyu_area <- nyu_poly %>% 
+  filter(year >= 2001) %>% 
   mutate(bldgarea = if_else(is.na(bldgarea), floorarea, as.double(bldgarea))) %>% 
   as_tibble() %>% 
   verify(!is.na(bldgarea)) %>% 
@@ -727,7 +701,10 @@ nyu_area <- nyu_pluto_app %>%
   mutate(borough = recode(borough, "BK" = "Brooklyn", "MN" = "Manhattan",
                           "BX" = "Bronx", "SI" = "Staten Island",
                           "QN" = "Queens"))
+
 nyu_area %>% 
+  filter(year >= 2001) %>% 
+  filter(borough == c("1", "3")) %>% 
   select(c("borough", "year", "bldgarea_total_boro")) %>% 
   unique() %>% 
   ggplot() +
@@ -737,6 +714,7 @@ nyu_area %>%
        y = "Square feet in thousands") +
   scale_color_manual(values = colors)
 ggsave(path(fig_path, "area_1.pdf"))
+
 nyu_area %>% 
   filter(borough == "Manhattan" | borough == "Brooklyn") %>% 
   select(c("borough", "year", "bldgarea_total_boro")) %>% 

@@ -119,6 +119,20 @@ nyu_acris_filt %>%
   mutate(count = n()) %>% 
   arrange(-count)
 
+# create summary table
+nyu_acris_filt %>% 
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  pivot_longer("party_type", names_to = "party", values_to = "party_value") %>% 
+  mutate(sale_type = if_else(party_value == 2, "Buying",
+                             "Selling")) %>% 
+  select(c("document_id", "doc_date", "sale_type")) %>% 
+  unique() %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
+  group_by(doc_year, sale_type) %>% 
+  summarize(count = n()) %>% 
+  arrange(-count)
+
 # number of deeds, split by selling vs. buying
 nyu_acris_filt %>% 
   filter(doc_type == "DEED") %>% 
@@ -141,52 +155,21 @@ nyu_acris_filt %>%
        x = "Year") +
   scale_color_manual(values = colors[1:2])
 
-ggsave(path(out, "sale_propert.pdf"))
+ggsave(path(fig_path, "sale_property.pdf"))
+
+nyu_acris_filt %>% 
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>%
+  filter(doc_year == 2007) %>% 
+  select(c("street_number", "street_name", "zip", "bbl")) %>% 
+  unique()
+
+nyu_acris_filt %>% 
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>%
+  filter(doc_year == 1984) %>% 
+  select(c("street_number", "street_name", "zip", "bbl")) %>% 
+  unique()
 ```
-```{r}
-copy_to(con, nyu_acris_filt,
-  name = "nyu_acris_filt", overwrite = T,
-  temporary = T
-)
-
-orig_vars <- names(nyu_acris_filt)
-nyu_acris_pluto <- st_read(con, query = "SELECT a.*,
-                           m21.geom_poly as geom1,
-                           m02.geom_poly as geom2 FROM nyu_acris_filt as a
-                           LEFT JOIN mappluto_21v2 as m21 on m21.bbl = a.bbl
-                           LEFT JOIN mappluto_02b as m0b on m0b.bbl = a.bbl")
-
-
-nyu_acris_clean <- nyu_acris_pluto %>% 
-  mutate(nyu_role = case_when(party_type == 2 ~ "Buyer",
-                              party_type == 1 ~ "Seller",
-                              TRUE ~ NA_character_))  %>% 
-  mutate(appdate = mdy(appdate)) %>% 
-  rowwise() %>% 
-  mutate(max_date = max(doc_date, assessment_date, modified_date,
-                        appdate, na.rm = T),
-         min_date = min(doc_date, assessment_date, 
-                        modified_date, appdate,
-                        na.rm = T)) %>% 
-  select(c("document_id", "bbl", "street_number", "street_name", "city", "zip",
-           "nyu_role", "doc_date", "doc_type", "min_date", "max_date",
-           "name", "address"))
-
-nyu_acris_clean 
-```
-
-
-## Geocode deed records
-```{r}
-library(geoclient)
-geoclient_api_key(key = "8023630502244bbbb65e9090d28c2615", overwrite = T, install = T)
-
-
-
-geocode <- nyu_acris %>% 
-  mutate(address_form = str_c(paste(street_number, street_name), 
-                              city, state, zip, sep = ", ")) %>% 
-  geo_search_data(address_form)
-geocode
-```
-
