@@ -110,7 +110,9 @@ nyu_pts <- st_read(path(out, "nyu_allyrs_pts.geojson")) %>%
   verify(!is.na(borough)) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC"))) %>% 
-  filter(!(bbl == "3012920067"))
+  filter(!(bbl == "3012920067")) %>% 
+  # filter out polytechnic prior to 2008, when the formal affiliation with NYU began
+  filter(!(year < 2008 & str_detect(ownername, "POLYTECHNIC")))
 
 nyu_poly <- st_read(path(out, "nyu_allyrs_upd.geojson")) %>% 
   select(-any_of(drop_vars))%>%
@@ -121,12 +123,16 @@ nyu_poly <- st_read(path(out, "nyu_allyrs_upd.geojson")) %>%
   verify(!is.na(borough)) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC"))) %>% 
-  filter(!(bbl == "3012920067"))
+  # filter out random crown heights building
+  filter(!(bbl == "3012920067")) %>% 
+  # filter out polytechnic prior to 2008, when the formal affiliation with NYU began
+  filter(!(year < 2008 & str_detect(ownername, "POLYTECHNIC")))
 
 nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC"))) %>% 
-  filter(!(bbl == "3012920067"))
+  # filter out random crown heights building
+  filter(!(bbl == "3012920067")) 
 
 nyu_poly %>% 
   st_transform(4326) %>% 
@@ -280,7 +286,7 @@ nyu_21 %>%
 # Interactive map in leaflet
 ```{r}
 nyu_leaflet <- st_transform(nyu_poly, 4263) %>% 
-  filter(year == 2021) %>% 
+  filter(year == 1997) %>% 
   filter(!st_is_empty(.))
 
 map_interactive <- leaflet(nyu_leaflet) %>%
@@ -386,20 +392,20 @@ tbl1 <- nyu_21 %>%
 
 
 # load 2021 pluto
-tbl1 <- tbl(con, "mappluto_21v3") %>% 
-  filter(!(ownertype %in% c("C", "O"))) %>% 
-  summarize(bldgarea_total = sum(bldgarea, na.rm = T),
-            lotarea_total = sum(lotarea, na.rm = T),
-            assessval_tot = sum(assesstot, na.rm = T),
-            bbl_tot = n_distinct(bbl)) %>% 
-  as_tibble() %>% 
-  cbind(tbl1) %>% 
-  mutate(bldgarea_per = round(bldgarea_nyu * 100/ bldgarea_total, 2),
-         lotarea_per = round(lotarea_nyu * 100 / bldgarea_total, 2),
-         assessval_per = round(assessval_nyu * 100 / assessval_tot, 2),
-         bbl_per = round(bbl_nyu * 100 / bbl_tot, 2))
-
-tbl1
+# tbl1 <- tbl(con, "mappluto_21v3") %>% 
+#   filter(!(ownertype %in% c("C", "O"))) %>% 
+#   summarize(bldgarea_total = sum(bldgarea, na.rm = T),
+#             lotarea_total = sum(lotarea, na.rm = T),
+#             assessval_tot = sum(assesstot, na.rm = T),
+#             bbl_tot = n_distinct(bbl)) %>% 
+#   as_tibble() %>% 
+#   cbind(tbl1) %>% 
+#   mutate(bldgarea_per = round(bldgarea_nyu * 100/ bldgarea_total, 2),
+#          lotarea_per = round(lotarea_nyu * 100 / bldgarea_total, 2),
+#          assessval_per = round(assessval_nyu * 100 / assessval_tot, 2),
+#          bbl_per = round(bbl_nyu * 100 / bbl_tot, 2))
+# 
+# tbl1
 
 tbl1 %>%
   select(-c("bldgarea_total", "lotarea_total", "assessval_tot", "bbl_tot", "geometry")) %>% 
@@ -421,46 +427,46 @@ ggsave(path(fig_path, "nyu_prop_summ.pdf"))
 
 ```{r}
 # summary
-owner_summ <- tbl(con, "mappluto_21v3") %>% 
-  mutate(ownername = str_trim(str_remove_all(ownername, "[\\.,-:']")),
-         ownername = str_replace_all(ownername, "(CORP\\s|CORP$)", "CORPORATION")) %>% 
-  # filter out city and other public, state, or federal
-  filter(!(ownertype %in% c("C", "O"))) %>% 
-  # filter out unknown
-  filter(!(ownername %in% c("UNAVAILABLE OWNER", "NAME NOT ON FILE",
-                            "NATIONAL PARK SERVICE",
-                            "UNITED STATES OF AMERICA",
-                            "PORT AUTHORITY OF NY AND NJ",
-                            "UNITED STATES POSTAL SERVICE",
-                            "MTA  LIRR",
-                            "NYS DEPARTMENT OF TRANSPORTATION",
-                            "MTA  STATEN ISLAND RAILWAY",
-                            "HOUSING TRUST FUND CORPORATION",
-                            "NYC DEPARTMENT OF ENVIRONMENTAL PROTECTION",
-                            "NYS DIV OF LANDS AND FORESTS",
-                            "DORMITORY AUTHORITY OF THE STATE OF NEW YORK",
-                            "NYC TRANSIT AUTHORITY",
-                            "NYS DEPARTMENT OF ENVIRONMENTAL CONSERVATION",
-                            "CONSOLIDATED EDISON COOF NYINC",
-                            "NYC DEPARTMENT OF TRANSPORTATION",
-                            "CITY OF NEW YORK",
-                            "MTA METRO NORTH",
-                            "NYC HOUSING AUTHORITY",
-                            "METROPOLITAN TRANSPORTATION AUTHORITY",
-                            "HOUSING TRUST FUND CORP",
-                            "USPS",
-                            "NYS OFFICE OF GENERAL SERVICES",
-                            "MTA  METRO NORTH",
-                            "NYC HOUSING DEVELOPMENT CORPORATION"
-                            ))) %>% 
-  group_by(ownername) %>% 
-  summarize(bldgarea_total = sum(bldgarea, na.rm = T),
-            lotarea_total = sum(lotarea, na.rm = T),
-            assessval_tot = sum(assesstot, na.rm = T),
-            bbl_tot = n_distinct(bbl)) %>% 
-  ungroup() %>% 
-  arrange(desc(bldgarea_total))  %>% 
-  as_tibble()
+# owner_summ <- tbl(con, "mappluto_21v3") %>% 
+#   mutate(ownername = str_trim(str_remove_all(ownername, "[\\.,-:']")),
+#          ownername = str_replace_all(ownername, "(CORP\\s|CORP$)", "CORPORATION")) %>% 
+#   # filter out city and other public, state, or federal
+#   filter(!(ownertype %in% c("C", "O"))) %>% 
+#   # filter out unknown
+#   filter(!(ownername %in% c("UNAVAILABLE OWNER", "NAME NOT ON FILE",
+#                             "NATIONAL PARK SERVICE",
+#                             "UNITED STATES OF AMERICA",
+#                             "PORT AUTHORITY OF NY AND NJ",
+#                             "UNITED STATES POSTAL SERVICE",
+#                             "MTA  LIRR",
+#                             "NYS DEPARTMENT OF TRANSPORTATION",
+#                             "MTA  STATEN ISLAND RAILWAY",
+#                             "HOUSING TRUST FUND CORPORATION",
+#                             "NYC DEPARTMENT OF ENVIRONMENTAL PROTECTION",
+#                             "NYS DIV OF LANDS AND FORESTS",
+#                             "DORMITORY AUTHORITY OF THE STATE OF NEW YORK",
+#                             "NYC TRANSIT AUTHORITY",
+#                             "NYS DEPARTMENT OF ENVIRONMENTAL CONSERVATION",
+#                             "CONSOLIDATED EDISON COOF NYINC",
+#                             "NYC DEPARTMENT OF TRANSPORTATION",
+#                             "CITY OF NEW YORK",
+#                             "MTA METRO NORTH",
+#                             "NYC HOUSING AUTHORITY",
+#                             "METROPOLITAN TRANSPORTATION AUTHORITY",
+#                             "HOUSING TRUST FUND CORP",
+#                             "USPS",
+#                             "NYS OFFICE OF GENERAL SERVICES",
+#                             "MTA  METRO NORTH",
+#                             "NYC HOUSING DEVELOPMENT CORPORATION"
+#                             ))) %>% 
+#   group_by(ownername) %>% 
+#   summarize(bldgarea_total = sum(bldgarea, na.rm = T),
+#             lotarea_total = sum(lotarea, na.rm = T),
+#             assessval_tot = sum(assesstot, na.rm = T),
+#             bbl_tot = n_distinct(bbl)) %>% 
+#   ungroup() %>% 
+#   arrange(desc(bldgarea_total))  %>% 
+#   as_tibble()
 
 # owner_summ_city <- tbl(con, "mappluto_21v3") %>% 
 #   filter(!(ownername %in% c("UNAVAILABLE OWNER", "NAME NOT ON FILE"))) %>% 

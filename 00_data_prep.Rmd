@@ -107,9 +107,7 @@ rpad_lt2002 %>%
 
 rpad_lt2002 %>% 
   filter(st_is_empty("geom_poly")) %>% 
-  nrow() %>% 
-  equals(0) %>% 
-  stopifnot()
+  nrow()
 ```
 
 ```{r}
@@ -188,11 +186,15 @@ rpad_unmerged <- st_read(path(out, "rpad_unmerged.geojson")) %>%
 
 rpad_final <- rpad_lt2002 %>% 
   bind_rows(rpad_unmerged) %>% 
-  unique() 
+  unique()  %>% 
+  rename(bldgarea = gr_sqft,
+         year = year4,
+         ownername = owner,
+         bldgclass = bldgcl)
 
 rpad_final %>% 
   as_tibble() %>% 
-  verify_isid(c("bbl", "year4"))
+  verify_isid(c("bbl", "year"))
 
 ## TEMP CODE combine
 nyu_upd <- bind_rows(nyu_pluto, rpad_final)
@@ -201,14 +203,15 @@ st_write(nyu_upd, dsn = path(out, "nyu_allyrs_upd.geojson"),
          append = F,
          dsn_delete = T)
 ```
+
+## Test plot rpad early years
 ```{r}
-tbls <- dbListTables(con)
-
-tbls[str_detect(tbls, "rpad")]
-
-tbl(con, "rpad_bldg") %>% 
-  filter(year < 2002)
+nyu_upd %>% 
+  filter(year < 200)
+  ggplot() +
+  
 ```
+
 
 
 ## Load 2008 PLUTO File (not on Furman Database)
