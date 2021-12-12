@@ -60,78 +60,146 @@ figs <- path(out, "figs")
 colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
 ```
 
-# Load 2021 PLUTO data filtered for NYU
-```{r} 
-ny21 <- st_read(path(out, "nyu_21.geojson")) %>% 
-  mutate(borough = if_else(borough == "Citywide", 
-                           "Citywide", 
-                           boros[match(borough, abbs)]),
-         borough = factor(borough, levels = c(boros, "Citywide"),
-                          ordered = T))
-ny21
+# Load deed data from Acris
+```{r}
+tbl(con, "acris_document_control_codes") %>% 
+  filter(class_code_description == 'DEEDS AND OTHER CONVEYANCES')
 
-ny21 %>% 
-  as_tibble() %>% 
-  tablist_qc(ownername)
+## Load acris data, deed records
+nyu_acris <- dbGetQuery(con, paste0("SELECT p.*, m.*, l.property_type,
+                  l.street_number, l.street_name, l.aptno, l.bbl FROM acris_parties as p
+                  INNER JOIN acris_master as m on (p.document_id = m.document_id)
+                  LEFT JOIN acris_document_control_codes as d on (m.doc_type = d.doc_type)
+                  LEFT JOIN acris_legals as l on (p.document_id = l.document_id)
+                  WHERE p.name ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)'
+                  AND p.name NOT IN ('NYU, SOON KEAT',
+                                  'OK NYU PARK, AS ADMINISTRATOR OF ESTATE',
+                                  'YOON, SOOK NYU CHUNG')"))
+nyu_acris
 
-# total assessed value
-assess_value_tbl <- ny21 %>% 
-  summarize(total_assessed = sum(assesstot, na.rm = T),
-                total_assessed_str = 
-                          formatC(total_assessed,
-                                     digits = 10,
-                                     big.mark = ",")) %>%
-  mutate(borough = "Citywide") %>% 
-  bind_rows(ny21 %>% 
-              group_by(borough) %>% 
-              summarize(total_assessed = sum(assesstot, na.rm = T),
-                total_assessed_str = 
-                          formatC(total_assessed,
-                                     digits = 10,
-                                     big.mark = ","))) 
+nyu_acris %>%
+  tablist_qc(name)
 
-assess_value_tbl
+nyu_acris_filt <- nyu_acris %>%
+  filter(doc_type != "EASE") %>% 
+  arrange(desc(doc_date)) %>% 
+  select(c("doc_date","bbl"), everything()) %>% 
+  mutate(apt = case_when(!is.na(aptno) ~ 1,
+                         TRUE ~ 0))
 
-assess_value_tbl %>% 
-  as_tibble() %>% 
-  ggplot(aes(borough, total_assessed)) +
-  geom_col(fill = colors[1]) +
-  scale_y_continuous(limits = c(0, 5000000000),
-                     breaks = c(0, 1000000000, 2000000000,
-                                3000000000, 4000000000,
-                                5000000000),
-                     labels = str_c("$", 
-                                    formatC(c(0, 
-                                              1000000000, 
-                                              2000000000,
-                                3000000000, 4000000000,
-                                5000000000), digits = 10,
-                                big.mark = ","))) +
-  labs(y = "Total assessed value",
-       x = "") +
-  theme_classic()
-
-ggsave(path(figs, "total_assessed.pdf"))
+nyu_acris_filt %>% 
+  mutate(doc_type = str_trim(doc_type)) %>% 
+  select(c("doc_type", "document_id")) %>% 
+  unique() %>% 
+  group_by(doc_type) %>% 
+  summarize(count = n()) %>% 
+  filter(count > 0) %>% 
+  arrange(-count)
 ```
 
-```{r, plot each borough}
-ny21_filt <- ny21 %>% 
-  filter(borough == "Manhattan") %>% 
-  st_as_sf("geom_poly") %>% 
-  st_transform(4326)
+Number of documents over time
+```{r}
+nyu_acris_filt %>% 
+  filter(!is.na(doc_date)) %>% 
+  select(c("document_id", "doc_date")) %>% 
+  unique() %>% 
+  group_by(doc_date) %>% 
+  mutate(count = n()) %>% 
+  arrange(-count)
 
-ext <- st_bbox(ny21_filt)
-basemap_magick(ext, map_service = "carto", map_type = "dark")
-
-
-ggplot() +
-  basemap_ggplot(ext) +
-  geom_sf(data =  ny21_filt, fill = colors[2], color = NA) +
+nyu_acris_filt %>% 
+  select(c("document_id", "doc_date")) %>% 
+  unique() %>% 
+  group_by(doc_date) %>% 
+  mutate(count = n()) %>% 
+  ggplot() +
+  geom_line(aes(doc_date, count)) +
   theme_classic() +
-  theme(axis.line=element_blank(),axis.text.x=element_blank(),
-          axis.text.y=element_blank(),axis.ticks=element_blank(),
-          axis.title.x=element_blank(),
-          axis.title.y=element_blank(),legend.position="none")
+  scale_y_continuous(limits = c(0,40)) +
+  scale_x_date(date_labels = "%Y",
+               date_breaks = "10 years",
+               limit = c(as.Date("1963-01-01"), as.Date("2021-01-01"))) +
+  labs(y = "Number of documents",
+       x = "Date")
+
+nyu_acris_filt  %>% 
+  select(c("document_id", "doc_date")) %>%
+  unique() %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
+  group_by(doc_year) %>% 
+  summarize(count = n()) %>% 
+  ggplot() +
+  geom_line(aes(doc_year, count)) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0,600)) +
+  scale_x_continuous(limits = c(1960, 2021),
+                  breaks = seq(1960, 2021, 10)) +
+  labs(y = "Number of documents",
+       x = "Year")
+
+nyu_acris_filt  %>% 
+  select(c("document_id", "doc_date", "doc_type")) %>%
+  unique() %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
+  group_by(doc_year, doc_type) %>% 
+  summarize(count = n()) %>% 
+  ggplot() +
+  geom_line(aes(doc_year, count, fill = doc_type)) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0,600)) +
+  scale_x_continuous(limits = c(1960, 2021),
+                  breaks = seq(1960, 2021, 10)) +
+  labs(y = "Number of documents",
+       x = "Year")
+```
+```{r}
+copy_to(con, nyu_acris_filt,
+  name = "nyu_acris_filt", overwrite = T,
+  temporary = T
+)
+
+nyu_acris_pluto <- tbl(con, "nyu_acris_filt") %>% 
+  left_join(tbl(con, "mappluto_21v3"), by = "bbl") %>% 
+  as_tibble()
+
+nyu_acris_clean <- nyu_acris_pluto %>% 
+  mutate(nyu_role = case_when(party_type == 2 ~ "Buyer",
+                              party_type == 1 ~ "Seller",
+                              TRUE ~ NA_character_))  %>% 
+  mutate(appdate = mdy(appdate)) %>% 
+  rowwise() %>% 
+  mutate(max_date = max(doc_date, assessment_date, modified_date,
+                        appdate, na.rm = T),
+         min_date = min(doc_date, assessment_date, 
+                        modified_date, appdate,
+                        na.rm = T)) %>% 
+  select(c("document_id", "bbl", "street_number", "street_name", "city", "zip",
+           "nyu_role", "doc_date", "doc_type", "min_date", "max_date",
+           "name", "address"))
+
+nyu_acris_clean %>% 
+  filter(document_id == "FT_1650000478165")
+
+tbl(con, "acris_legals") %>% 
+  filter(bbl == "1000510015") %>% 
+  inner_join(tbl(con, "acris_parties"), by = "document_id") %>% 
+  inner_join(tbl(con, "acris_master"), by = "document_id") %>% 
+  filter(modified_date < as.Date("1990-01-01")) %>% 
+  select(c("doc_type"), everything()) %>% 
 ```
 
+
+## Geocode deed records
+```{r}
+library(geoclient)
+geoclient_api_key(key = "8023630502244bbbb65e9090d28c2615", overwrite = T, install = T)
+
+
+
+geocode <- nyu_acris %>% 
+  mutate(address_form = str_c(paste(street_number, street_name), 
+                              city, state, zip, sep = ", ")) %>% 
+  geo_search_data(address_form)
+geocode
+```
 

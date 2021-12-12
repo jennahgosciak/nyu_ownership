@@ -179,13 +179,21 @@ rpad_check %>%
 ```
 ```{r}
 rpad_unmerged <- st_read(path(out, "rpad_unmerged.geojson")) %>% 
-  filter(is.na(owner) & str_sub(exmtcl, 1, 1) == "X") %>% 
+  filter(is.na(owner)) %>% 
+  #filter(is.na(owner) & str_sub(exmtcl, 1, 1) == "X") %>% 
   mutate(l_acre = as.character(l_acre),
          bld_var = as.character(bld_var),
          ex_chgdt = as.character(ex_chgdt))
 
+rpad_unmerged %>% 
+  tablist_qc(year4)
+
+rpad_unmerged %>% 
+  tablist_qc(owner)
+
 rpad_final <- rpad_lt2002 %>% 
-  bind_rows(rpad_unmerged) %>% 
+  as_tibble() %>% 
+  bind_rows(as_tibble(rpad_unmerged)) %>% 
   unique()  %>% 
   rename(bldgarea = gr_sqft,
          year = year4,
@@ -194,10 +202,23 @@ rpad_final <- rpad_lt2002 %>%
 
 rpad_final %>% 
   as_tibble() %>% 
+  verify(!is.na(year))
+
+nyu_pluto %>% 
+  as_tibble() %>% 
+  verify(!is.na(year))
+
+rpad_final %>% 
+  as_tibble() %>% 
   verify_isid(c("bbl", "year"))
 
 ## TEMP CODE combine
-nyu_upd <- bind_rows(nyu_pluto, rpad_final)
+nyu_upd <- bind_rows(as_tibble(nyu_pluto), rpad_final) %>% 
+  st_as_sf()
+
+nyu_upd %>% 
+  as_tibble() %>% 
+  verify(!is.na(year))
 
 st_write(nyu_upd, dsn = path(out, "nyu_allyrs_upd.geojson"),
          append = F,

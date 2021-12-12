@@ -111,13 +111,17 @@ nyu_pts <- st_read(path(out, "nyu_allyrs_pts.geojson")) %>%
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC"))) %>% 
   filter(!(bbl == "3012920067")) %>% 
-  # filter out polytechnic prior to 2008, when the formal affiliation with NYU began
-  filter(!(year < 2008 & str_detect(ownername, "POLYTECHNIC")))
+  # filter out polytechnic
+  filter(!(str_detect(ownername, "POLYTECHNIC"))) %>% 
+  mutate(bbl = case_when(bbl == "2057530140" ~ "2057520121",
+                         TRUE ~ bbl)) %>% 
+  mutate(address_form = case_when(!is.na(address) ~ address,
+                                  TRUE ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", ")))
 
 nyu_poly <- st_read(path(out, "nyu_allyrs_upd.geojson")) %>% 
+  unique() %>% 
   select(-any_of(drop_vars))%>%
-  mutate(cd = ifelse(is.na(cd), cd2, cd),
-         ownername = ifelse(is.na(ownername), str_trim(owner), str_trim(ownername))) %>% 
+  mutate(cd = ifelse(is.na(cd), cd2, cd)) %>% 
   mutate(borough = str_sub(cd, 1, 1)) %>% 
   select(-"cd2") %>% 
   verify(!is.na(borough)) %>% 
@@ -126,19 +130,28 @@ nyu_poly <- st_read(path(out, "nyu_allyrs_upd.geojson")) %>%
   # filter out random crown heights building
   filter(!(bbl == "3012920067")) %>% 
   # filter out polytechnic prior to 2008, when the formal affiliation with NYU began
-  filter(!(year < 2008 & str_detect(ownername, "POLYTECHNIC")))
+  filter(!(str_detect(ownername, "POLYTECHNIC"))) %>%
+  mutate(address_form = case_when(!is.na(address) ~ address,
+                                  TRUE ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", ")))
 
 nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC"))) %>% 
   # filter out random crown heights building
-  filter(!(bbl == "3012920067")) 
+  filter(!(bbl == "3012920067")) %>% 
+  mutate(bbl = case_when(bbl == "2057530140" ~ "2057520121",
+                         TRUE ~ bbl))
 
 nyu_poly %>% 
   st_transform(4326) %>% 
   st_write(dsn = path(web_path, "nyu_allyrs.geojson"),
            delete_dsn = T,
            append = F)
+
+# checking not missing year
+nyu_poly %>% 
+  as_tibble() %>% 
+  verify(!is.na(year))
 
 nyu_pts %>% 
   st_transform(4326) %>% 
@@ -618,7 +631,7 @@ nyu_assess_geo <- nyu_assess_value  %>%
     "assessed_adj_orig",
     matches("area"),
     "cd",
-    "address", "bbl", "borough",
+    "address_form", "bbl", "borough",
     "taxes_yr", "taxes_calc", 
     matches("area")) %>% 
   mutate(across(c("assessed_adj",
@@ -626,7 +639,7 @@ nyu_assess_geo <- nyu_assess_value  %>%
                 "taxes_yr",
                 "taxes_calc",
                 "bldgarea"), ~if_else(is.na(.) | is.infinite(.), "", prettyNum(., big.mark = ",")))) %>% 
-  mutate(across(c("address",
+  mutate(across(c("address_form",
                 "ownername"), ~if_else(is.na(.) | is.infinite(.), "", .))) %>% 
   mutate(across(c("assessed_adj",
                 "assessed_adj_orig",
@@ -634,32 +647,78 @@ nyu_assess_geo <- nyu_assess_value  %>%
                 "taxes_calc"), ~if_else(. != "", str_c("$",.), "")))
 
 nyu_assess_geo %>% 
-  filter(year == 2021)
- 
-fix_geom <- nyu_assess_geo %>% 
+  filter(year == 2021) %>% 
+  select(c("bbl", "ownername", "year"))
+```
+
+```{r}
+library(geoclient)
+geoms2geocode <- nyu_assess_geo %>% 
   filter(st_is_empty(geometry)) %>% 
   as_tibble() %>% 
-  select(-"geometry") %>% 
-  left_join(mutate(nyu_assess_geo, year = year - 1) %>% 
-              select(c("year", "geometry")) %>% 
-              bind_rows(mutate(nyu_assess_geo, year = year - 3) %>% 
-              select(c("year", "geometry"))), by = "year", suffix = c("orig", "new"))
-  
-nyu_assess_geo %>% 
-  filter(st_is_empty(geometry)) %>% 
-  nrow() 
+  select(-"geometry")
 
-fix_geom <- fix_geom %>% 
-    filter(!st_is_empty(geometry)) %>% 
-    group_by(bbl, year) %>% 
-    filter(row_number() == 1) %>%
-    st_as_sf()
-fix_geom
+geoms2geocode %>% 
+  filter(is.na(address_form)) %>% 
+  select(c("year", "bbl"))
 
+geoms_geocoded <- geoms2geocode %>% 
+  geo_search_data(address_form) %>% 
+  rename(bbl_geo = bbl) %>%
+  select(c("bbl_geo", "no_results")) %>% 
+  cbind(geoms2geocode) %>% 
+  filter(no_results == F) %>% 
+  bind_rows(
+    geoms2geocode %>% 
+  filter(is.na(address_form))
+  )  %>% 
+  # need to manually code this bbl
+  mutate(bbl = case_when(bbl == "2057530140" ~ "2057520121",
+                         bbl != bbl_geo ~ bbl_geo,
+                         TRUE ~ bbl))
+geoms_geocoded
 
+copy_to(con, geoms_geocoded,
+  name = "geoms_geocoded", overwrite = T,
+  temporary = T
+)
+
+fix_geom <- st_read(con, query = "SELECT g.*, m21.geom_poly as geom1,
+                                          m2.geom_poly as geom2 FROM geoms_geocoded as g
+                        LEFT JOIN mappluto_21v3 as m21 on (g.bbl = m21.bbl)
+                        LEFT JOIN mappluto_02b as m2 on (g.bbl = m2.bbl)")
+
+fix_geom %>% 
+  as_tibble() %>% 
+  st_set_geometry("geom2") %>% 
+  filter(st_is_empty(geom2)) %>% 
+  nrow() %>% 
+  equals(0) %>% 
+  stopifnot()
+
+# rows are dropping, but I think that's to be expected?
+# possibly condo vs. large building
+fix_geom_filt <- fix_geom %>% 
+  as_tibble() %>% 
+  rename(geometry = geom2) %>% 
+  st_set_geometry("geometry") %>%
+  select(-c("geom1")) %>% 
+  group_by(bbl, year) %>% 
+  filter(row_number() == 1)
+```
+
+```{r}
 nyu_assess_geo %>% 
   filter(!st_is_empty(geometry)) %>% 
-  bind_rows(fix_geom) %>% 
+  bind_rows(fix_geom_filt) %>% 
+  filter(st_is_empty(geometry)) %>% 
+  nrow() %>% 
+  equals(0) %>% 
+  stopifnot()
+  
+nyu_assess_geo %>% 
+  filter(!st_is_empty(geometry)) %>% 
+  bind_rows(fix_geom_filt) %>%   
   st_write(
     dsn = path(
       "04_WebMap",
@@ -775,146 +834,5 @@ tbl(con, "mappluto_15v1") %>%
 ```
 
 
-# Load deed data from Acris
-```{r}
-tbl(con, "acris_document_control_codes") %>% 
-  filter(class_code_description == 'DEEDS AND OTHER CONVEYANCES')
 
-## Load acris data, deed records
-nyu_acris <- dbGetQuery(con, paste0("SELECT p.*, m.*, l.property_type,
-                  l.street_number, l.street_name, l.aptno, l.bbl FROM acris_parties as p
-                  INNER JOIN acris_master as m on (p.document_id = m.document_id)
-                  LEFT JOIN acris_document_control_codes as d on (m.doc_type = d.doc_type)
-                  LEFT JOIN acris_legals as l on (p.document_id = l.document_id)
-                  WHERE p.name ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)'
-                  AND p.name NOT IN ('NYU, SOON KEAT',
-                                  'OK NYU PARK, AS ADMINISTRATOR OF ESTATE',
-                                  'YOON, SOOK NYU CHUNG')"))
-nyu_acris
-
-nyu_acris %>%
-  tablist_qc(name)
-
-nyu_acris_filt <- nyu_acris %>%
-  filter(doc_type != "EASE") %>% 
-  arrange(desc(doc_date)) %>% 
-  select(c("doc_date","bbl"), everything()) %>% 
-  mutate(apt = case_when(!is.na(aptno) ~ 1,
-                         TRUE ~ 0))
-
-nyu_acris_filt %>% 
-  mutate(doc_type = str_trim(doc_type)) %>% 
-  select(c("doc_type", "document_id")) %>% 
-  unique() %>% 
-  group_by(doc_type) %>% 
-  summarize(count = n()) %>% 
-  filter(count > 0) %>% 
-  arrange(-count)
-```
-
-Number of documents over time
-```{r}
-nyu_acris_filt %>% 
-  filter(!is.na(doc_date)) %>% 
-  select(c("document_id", "doc_date")) %>% 
-  unique() %>% 
-  group_by(doc_date) %>% 
-  mutate(count = n()) %>% 
-  arrange(-count)
-
-nyu_acris_filt %>% 
-  select(c("document_id", "doc_date")) %>% 
-  unique() %>% 
-  group_by(doc_date) %>% 
-  mutate(count = n()) %>% 
-  ggplot() +
-  geom_line(aes(doc_date, count)) +
-  theme_classic() +
-  scale_y_continuous(limits = c(0,40)) +
-  scale_x_date(date_labels = "%Y",
-               date_breaks = "10 years",
-               limit = c(as.Date("1963-01-01"), as.Date("2021-01-01"))) +
-  labs(y = "Number of documents",
-       x = "Date")
-
-nyu_acris_filt  %>% 
-  select(c("document_id", "doc_date")) %>%
-  unique() %>% 
-  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
-  group_by(doc_year) %>% 
-  summarize(count = n()) %>% 
-  ggplot() +
-  geom_line(aes(doc_year, count)) +
-  theme_classic() +
-  scale_y_continuous(limits = c(0,600)) +
-  scale_x_continuous(limits = c(1960, 2021),
-                  breaks = seq(1960, 2021, 10)) +
-  labs(y = "Number of documents",
-       x = "Year")
-
-nyu_acris_filt  %>% 
-  select(c("document_id", "doc_date", "doc_type")) %>%
-  unique() %>% 
-  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
-  group_by(doc_year, doc_type) %>% 
-  summarize(count = n()) %>% 
-  ggplot() +
-  geom_line(aes(doc_year, count, fill = doc_type)) +
-  theme_classic() +
-  scale_y_continuous(limits = c(0,600)) +
-  scale_x_continuous(limits = c(1960, 2021),
-                  breaks = seq(1960, 2021, 10)) +
-  labs(y = "Number of documents",
-       x = "Year")
-```
-```{r}
-copy_to(con, nyu_acris_filt,
-  name = "nyu_acris_filt", overwrite = T,
-  temporary = T
-)
-
-nyu_acris_pluto <- tbl(con, "nyu_acris_filt") %>% 
-  left_join(tbl(con, "mappluto_21v3"), by = "bbl") %>% 
-  as_tibble()
-
-nyu_acris_clean <- nyu_acris_pluto %>% 
-  mutate(nyu_role = case_when(party_type == 2 ~ "Buyer",
-                              party_type == 1 ~ "Seller",
-                              TRUE ~ NA_character_))  %>% 
-  mutate(appdate = mdy(appdate)) %>% 
-  rowwise() %>% 
-  mutate(max_date = max(doc_date, assessment_date, modified_date,
-                        appdate, na.rm = T),
-         min_date = min(doc_date, assessment_date, 
-                        modified_date, appdate,
-                        na.rm = T)) %>% 
-  select(c("document_id", "bbl", "street_number", "street_name", "city", "zip",
-           "nyu_role", "doc_date", "doc_type", "min_date", "max_date",
-           "name", "address"))
-
-nyu_acris_clean %>% 
-  filter(document_id == "FT_1650000478165")
-
-tbl(con, "acris_legals") %>% 
-  filter(bbl == "1000510015") %>% 
-  inner_join(tbl(con, "acris_parties"), by = "document_id") %>% 
-  inner_join(tbl(con, "acris_master"), by = "document_id") %>% 
-  filter(modified_date < as.Date("1990-01-01")) %>% 
-  select(c("doc_type"), everything()) %>% 
-```
-
-
-## Geocode deed records
-```{r}
-library(geoclient)
-geoclient_api_key(key = "8023630502244bbbb65e9090d28c2615", overwrite = T, install = T)
-
-
-
-geocode <- nyu_acris %>% 
-  mutate(address_form = str_c(paste(street_number, street_name), 
-                              city, state, zip, sep = ", ")) %>% 
-  geo_search_data(address_form)
-geocode
-```
 
