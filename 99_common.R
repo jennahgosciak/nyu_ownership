@@ -84,7 +84,9 @@ tablist_qc <- function(x, ...) {
 }
 
 clean_base_file <- function(df) {
-  df %>%
+  df %>% 
+    unique() %>% 
+    select(-any_of(drop_vars)) %>%
     mutate(cd = ifelse(is.na(cd), cd2, cd),
            ownername = ifelse(is.na(ownername), str_trim(owner), str_trim(ownername))) %>% 
     mutate(borough = str_sub(cd, 1, 1)) %>% 
@@ -98,5 +100,6 @@ clean_base_file <- function(df) {
     mutate(bbl = case_when(bbl == "2057530140" ~ "2057520121",
                            TRUE ~ bbl)) %>% 
     mutate(address_form = case_when(!is.na(address) ~ address,
-                                    TRUE ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", ")))
+                                    !is.na(str_name) ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", "),
+                                    TRUE ~ NA_character_))
 }

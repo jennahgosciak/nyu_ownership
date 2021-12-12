@@ -101,36 +101,19 @@ drop_vars <- c("shape_area",
 
 # read in point data
 nyu_pts <- st_read(path(out, "nyu_allyrs_pts.geojson")) %>% 
-  select(-any_of(drop_vars)) %>% 
+  filter(year >= 2001 | year <= 1998) %>% 
   clean_base_file()
 
 nyu_poly <- st_read(path(out, "nyu_allyrs.geojson")) %>% 
-  unique() %>% 
+  filter(year >= 2001 | year <= 1998) %>% 
   clean_base_file()
 
 nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
-                            "ARA HOLDINGS OF NYU LLC"))) %>% 
-  # filter out random crown heights building
-  filter(!(bbl == "3012920067")) %>% 
-  mutate(bbl = case_when(bbl == "2057530140" ~ "2057520121",
-                         TRUE ~ bbl))
-nyu_poly %>% 
-  st_transform(4326) %>% 
-  st_write(dsn = path(web_path, "nyu_allyrs.geojson"),
-           delete_dsn = T,
-           append = F)
-
-nyu_pts %>% 
-  st_transform(4326) %>% 
-  st_write(dsn = path(web_path, "nyu_allyrs_pts.geojson"),
-           delete_dsn = T,
-           append = F)
-
-nyu_poly %>% 
-  filter(year == 2000)
+                            "ARA HOLDINGS OF NYU LLC")))
 ```
 
+## Loading background shapefiles for context maps
 ```{r}
 url_boro <- "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Borough_Boundary/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson"
 url_nhood <- "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2020/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson"
@@ -337,8 +320,8 @@ expt_cd <- function(cds, shp, cd_num, yr) {
 ggplot(nyu_21) +
   geom_sf(data = boro %>% 
             filter(BoroCode == 1), fill = NA, color = "white", size = 0.05) +
-  geom_sf(data = parks %>% 
-            filter(str_sub(parknum, 1, 1) == "M"), fill = "#777777", color = NA) +
+  # geom_sf(data = parks %>% 
+  #           filter(str_sub(parknum, 1, 1) == "M"), fill = "#777777", color = NA) +
   geom_sf(fill = "#9057FF", color = NA) +
   theme_void() +
   theme(plot.background = element_rect(fill = '#424242'))
@@ -368,20 +351,20 @@ tbl1 <- nyu_21 %>%
 #          bbl_per = round(bbl_nyu * 100 / bbl_tot, 2))
 # 
 # tbl1
-tbl1 %>%
-  select(-c("bldgarea_total", "lotarea_total", "assessval_tot", "bbl_tot", "geometry")) %>% 
-  pivot_longer(everything()) %>% 
-  mutate(type = if_else(str_detect(name, "nyu"), "nyu", "per"),
-         name = str_replace_all(name, "(_nyu)|(_per)", "")) %>% 
-  pivot_wider(name, names_from = "type", values_from = "value") %>% 
-  ggplot(aes(reorder(name, desc(per)), per)) +
-  geom_col(fill = colors[1]) +
-  geom_text(aes(label = nyu), vjust = -1) +
-  theme_classic() +
-  scale_y_continuous(limits = c(0, 3), breaks = c(0, 1, 2, 3)) +
-  labs(x = "",
-         y = "Percent of non-city owned properties")
-ggsave(path(fig_path, "nyu_prop_summ.pdf"))
+# tbl1 %>%
+#   select(-c("bldgarea_total", "lotarea_total", "assessval_tot", "bbl_tot", "geometry")) %>% 
+#   pivot_longer(everything()) %>% 
+#   mutate(type = if_else(str_detect(name, "nyu"), "nyu", "per"),
+#          name = str_replace_all(name, "(_nyu)|(_per)", "")) %>% 
+#   pivot_wider(name, names_from = "type", values_from = "value") %>% 
+#   ggplot(aes(reorder(name, desc(per)), per)) +
+#   geom_col(fill = colors[1]) +
+#   geom_text(aes(label = nyu), vjust = -1) +
+#   theme_classic() +
+#   scale_y_continuous(limits = c(0, 3), breaks = c(0, 1, 2, 3)) +
+#   labs(x = "",
+#          y = "Percent of non-city owned properties")
+# ggsave(path(fig_path, "nyu_prop_summ.pdf"))
 ```
 
 ```{r}
@@ -437,10 +420,10 @@ ggsave(path(fig_path, "nyu_prop_summ.pdf"))
 #   arrange(desc(bldgarea_total)) %>% 
 #   as_tibble()
 # Top ownership tables
-owner_summ
-owner_summ_city
-owner_summ %>% 
-  arrange(desc(bbl_tot))
+# owner_summ
+# owner_summ_city
+# owner_summ %>% 
+#   arrange(desc(bbl_tot))
 ```
 
 ## Graph of top ownership in NYC in 2021
@@ -472,25 +455,19 @@ owner_summ %>%
        x = "")
 ggsave(path(fig_path, "ranking_nbld.pdf"))
 ```
-## Prep dat for interactive map
-```{r}
-# create a dataframe of the properties
-nyu_df <- nyu_poly %>% 
-  select(-any_of(drop_vars))
-nyu_df
 
-nyu_df %>% 
-  filter(year == 2000)
-```
 ```{r}
+nyu_poly %>% 
+  tablist_qc(year)
+
 # number of buildings by year
-nyu_df %>% 
+nyu_poly %>% 
   group_by(year) %>% 
   summarize(count = n_distinct(bbl)) %>% 
   ggplot() +
   geom_line(aes(year, count)) +
-  scale_x_continuous(limits = c(1998, 2021),
-                     breaks = seq(1998, 2021, 3)) +
+  scale_x_continuous(limits = c(1997, 2021),
+                     breaks = seq(1997, 2021, 3)) +
   theme_classic() +
   labs(x = "Year",
        y = "Number of buildings")

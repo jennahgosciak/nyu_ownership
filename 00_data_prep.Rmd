@@ -103,13 +103,8 @@ rpad_lt2002 %>%
   nrow()
 ```
 
+* Investigating unmerged cases
 ```{r}
-# TEMP CODE
-rpad_lt2002 <- st_read(path(out, "rpad_nyu.geojson"))
-rpad_lt2002 %>% 
-  tablist_qc(year4)
-
-
 nyu_pluto <- st_read(path(out, "nyu_allyrs.geojson")) %>% 
   filter(year > 2001) %>% 
   as_tibble()
@@ -154,6 +149,46 @@ nyu_pluto %>%
   select(c("ownername", "address", "year", "yearbuilt", "bbl")) %>% 
   arrange(year)
 ```
+
+```{r}
+copy_to(con, unmerged_rpad,
+  name = "unmerged_rpad", overwrite = T,
+  temporary = T
+)
+
+rpad_check <- st_read(con, query = "SELECT r.* FROM rpad_raw as r
+                      INNER JOIN unmerged_rpad as unmgd on coalesce(r.bbl, r.bble, r.bbl_condo) = unmgd.bbl
+                      LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
+                      WHERE r.year4 < 2002 and r.year4 > 1996")
+rpad_check %>% 
+  select(c("owner", "bbl", "str_name"))
+
+rpad_check <- rpad_check %>% 
+  filter(is.na(owner) & str_sub(exmtcl, 1, 1) == "X") %>% 
+  select(c("bble", "bbl", "bbl_condo",  "cd_rpad",
+            "cd", "bldgcl", "exmtcl",
+           "owner", "hnum_lo", "hnum_hi", "str_name",
+           "zip", "tot_unit", "res_unit", "bldgs",
+           "lnd_area", "gr_sqft", "zoning", "yrb", "year4",
+           "owner", "geom_poly", "geom_point",
+           "hnum_lo", "hnum_hi", "str_name", "zip")) %>% 
+  rename(bldgarea = gr_sqft,
+         year = year4,
+         ownername = owner,
+         bldgclass = bldgcl) 
+
+rpad_check %>% 
+  tablist_qc(year4)
+
+rpad_check %>% 
+  tablist_qc(owner)
+
+rpad_final <- rpad_filt %>% 
+  bind_rows(rpad_check) %>% 
+  unique()
+```
+
+
 ## Load 2008 PLUTO File (not on Furman Database)
 ```{r}
 boros <- c("Manhattan", "Brooklyn",
@@ -282,7 +317,7 @@ years <- c(2002:2007, 2009:2021)
 nyu_pluto_full <- map2(tblnames, years, ~ extract_nyu(con, .x, .y))
 ```
 ```{r}
-nyu_pluto_app <- bind_rows(nyu_pluto_full, pluto2008_nyu, rpad_filt)
+nyu_pluto_app <- bind_rows(nyu_pluto_full, pluto2008_nyu, rpad_final)
 nyu_pluto_app
 
 nyu_21 <- extract_nyu(con, "mappluto_21v3", 2021)
