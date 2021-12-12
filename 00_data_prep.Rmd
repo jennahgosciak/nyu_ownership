@@ -61,6 +61,81 @@ colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
 Purpose: to create a cleaned file of NYU properties 1998-2021
 Also runs other data-intensive tasks from the Furman database
 
+* Checking differences between bbl_condo and bbl_unit
+* bbl_unit doesn't seem useful, doesn't appear in PLUTO
+```{r}
+tbl(con, "rpad_raw") %>% 
+  filter(year4 == 1999) %>% 
+  left_join(tbl(con, "rpad_condo_xwalk"), by = "bbl_condo") %>% 
+  filter(bbl_condo != bbl_unit) %>% 
+  select(matches("bbl"))
+```
+```{r}
+## checking 330 east 30th street, seems incorrect
+tbl(con, "rpad_raw") %>% 
+  filter(bbl == "1009367501") %>% 
+  arrange(year4) %>% 
+  select(c("owner"), everything())
+
+# seems like discrepancy of condo vs. unit
+# looks like nyu owns a condo, but this condo won't show up
+# in pluto bc NYU doesn't own the whole building
+rpad_final %>% 
+  filter(block == 936) %>% 
+  arrange(year) %>% 
+  select(c("ownername"), everything()) %>% 
+  select(c("bbl", "bbl_condo"))
+```
+```{r}
+rpad_allyrs <- dbGetQuery(con, "SELECT * FROM rpad_raw
+                            WHERE owner ~* 
+                          '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'")
+rpad_allyrs %>% 
+  arrange(year4) %>% 
+  tablist_qc(year4)
+
+rpad_allyrs %>% 
+  select(c("bble", "bbl", "bbl_condo",  "cd_rpad",
+            "cd", "bldgcl", "exmtcl",
+           "owner", "hnum_lo", "hnum_hi", "str_name",
+           "zip", "tot_unit", "res_unit", "bldgs",
+           "lnd_area", "gr_sqft", "zoning", "yrb", "year4",
+           "owner", "geom_poly", "geom_point",
+           "hnum_lo", "hnum_hi", "str_name", "zip")) %>% 
+  rename(bldgarea = gr_sqft,
+         year = year4,
+         ownername = owner,
+         bldgclass = bldgcl) %>% 
+  writeRDS(path(out, "rpad_allyrs.RDS"))
+```
+```{r}
+rpad_allyrs_pts <- st_read(con, query = "SELECT * FROM rpad_raw_with_pts
+                            WHERE owner ~* 
+                          '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'")
+
+rpad_allyrs_pts %>% 
+  arrange(year4) %>% 
+  tablist_qc(year4)
+
+rpad_allyrs_pts %>% 
+  select(c("bble", "bbl", "bbl_condo",  "cd_rpad",
+            "cd", "bldgcl", "exmtcl",
+           "owner", "hnum_lo", "hnum_hi", "str_name",
+           "zip", "tot_unit", "res_unit", "bldgs",
+           "lnd_area", "gr_sqft", "zoning", "yrb", "year4",
+           "owner", "geom_poly", "geom_point",
+           "hnum_lo", "hnum_hi", "str_name", "zip")) %>% 
+  rename(bldgarea = gr_sqft,
+         year = year4,
+         ownername = owner,
+         bldgclass = bldgcl) %>% 
+  st_write(rpad_allyrs_pts,
+           dsn = path(out, "rpad_allyrs_pts.geojson"))
+```
+
+
+
+
 ## Load earlier RPAD Files
 ```{r}
 rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,

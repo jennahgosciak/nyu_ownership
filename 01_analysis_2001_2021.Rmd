@@ -104,6 +104,11 @@ nyu_poly <- st_read(path(out, "nyu_allyrs.geojson")) %>%
 nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC")))
+
+rpad_allyrs <- st_read(path(out, "rpad_allyrs_pts.geojson")) %>% 
+  filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
+                            "ARA HOLDINGS OF NYU LLC"))) %>% 
+  clean_base_file()
 ```
 ## Loading background shapefiles for context maps
 ```{r}
@@ -532,6 +537,7 @@ geoms_geocoded <- geoms2geocode %>%
                          bbl != bbl_geo ~ bbl_geo,
                          TRUE ~ bbl))
 geoms_geocoded
+
 copy_to(con, geoms_geocoded,
   name = "geoms_geocoded", overwrite = T,
   temporary = T

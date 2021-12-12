@@ -104,7 +104,7 @@ nyu_acris_filt %>%
   arrange(-count)
 
 nyu_acris_filt %>% 
-  saveRDS(path(fig_out, "nyu_acris.RDS"))
+  saveRDS(path(out, "nyu_acris.RDS"))
 ```
 
 Number of documents over time
@@ -183,3 +183,36 @@ nyu_acris_filt %>%
   verify(party_type %in% c(1, 2)) %>% 
   filter(is.na(doc_date))
 ```
+
+```{r}
+copy_to(con, nyu_acris_filt,
+  name = "nyu_acris_filt", overwrite = T,
+  temporary = T
+)
+
+## attempt to get spatial info
+nyu_acris_geo <- st_read(con, query = "SELECT a.*, r.bbl_unit,
+                                          m21.geom_poly as geom1,
+                                          m2.geom_poly as geom2 FROM nyu_acris_filt as a
+                                          LEFT JOIN rpad_condo_xwalk as r on (a.bbl = r.bbl_unit)
+                        LEFT JOIN mappluto_21v3 as m21 on (coalesce(a.bbl, r.bbl_unit) = m21.bbl)
+                        LEFT JOIN mappluto_02b as m2 on (coalesce(a.bbl, r.bbl_unit) = m2.bbl)")
+
+nyu_acris_geo %>% 
+  select(c("bbl")) %>% 
+  unique() %>% 
+  filter(!st_is_empty(geom1)) %>% 
+  nrow()
+
+nyu_acris_geo %>% 
+  st_set_geometry("geom2") %>% 
+  select(c("bbl")) %>% 
+  unique() %>% 
+  filter(!st_is_empty(geom2)) %>% 
+  nrow()
+
+nyu_acris_geo %>% 
+  st_set_geometry("geom2") %>% 
+  filter(st_is_empty(geom2))
+```
+
