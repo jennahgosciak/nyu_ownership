@@ -86,7 +86,7 @@ map.on('click', 'nyu', function(e) {
   var coordinates = e.features[0].geometry.coordinates.slice();
   // get its species name from the feature's attributes
   var owner = e.features[0].properties.ownername;
-  var address = e.features[0].properties.address;
+  var address = e.features[0].properties.address_form;
   var value = e.features[0].properties.assessed_adj;
   var value_orig = e.features[0].properties.assessed_adj_orig;
   var bldgarea = e.features[0].properties.bldgarea;
