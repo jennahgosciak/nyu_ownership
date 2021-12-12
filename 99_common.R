@@ -82,3 +82,21 @@ tablist_qc <- function(x, ...) {
     as.data.frame() %>%
     pander::pandoc.table(split.tables = Inf, multi.line = TRUE)
 }
+
+clean_base_file <- function(df) {
+  df %>%
+    mutate(cd = ifelse(is.na(cd), cd2, cd),
+           ownername = ifelse(is.na(ownername), str_trim(owner), str_trim(ownername))) %>% 
+    mutate(borough = str_sub(cd, 1, 1)) %>% 
+    select(-"cd2") %>% 
+    verify(!is.na(borough)) %>% 
+    filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
+                              "ARA HOLDINGS OF NYU LLC"))) %>% 
+    filter(!(bbl == "3012920067")) %>% 
+    # filter out polytechnic
+    filter(!(str_detect(ownername, "POLYTECHNIC"))) %>% 
+    mutate(bbl = case_when(bbl == "2057530140" ~ "2057520121",
+                           TRUE ~ bbl)) %>% 
+    mutate(address_form = case_when(!is.na(address) ~ address,
+                                    TRUE ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", ")))
+}
