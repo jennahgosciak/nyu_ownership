@@ -97,10 +97,6 @@ rpad_lt2002 %>%
   st_write(dsn = path(out, "rpad_nyu.geojson"), driver = "GeoJSON",
            append = F,
            delete_dsn = T)
-
-rpad_lt2002 %>% 
-  filter(st_is_empty("geom_poly")) %>% 
-  nrow()
 ```
 
 * Investigating unmerged cases
@@ -156,7 +152,7 @@ copy_to(con, unmerged_rpad,
   temporary = T
 )
 
-rpad_check <- st_read(con, query = "SELECT r.* FROM rpad_raw as r
+rpad_check <- st_read(con, query = "SELECT r.*, m.geom_poly FROM rpad_raw as r
                       INNER JOIN unmerged_rpad as unmgd on coalesce(r.bbl, r.bble, r.bbl_condo) = unmgd.bbl
                       LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
                       WHERE r.year4 < 2002 and r.year4 > 1996")
@@ -165,23 +161,17 @@ rpad_check %>%
 
 rpad_check <- rpad_check %>% 
   filter(is.na(owner) & str_sub(exmtcl, 1, 1) == "X") %>% 
-  select(c("bble", "bbl", "bbl_condo",  "cd_rpad",
+  select(any_of(c("bble", "bbl", "bbl_condo",  "cd_rpad",
             "cd", "bldgcl", "exmtcl",
            "owner", "hnum_lo", "hnum_hi", "str_name",
            "zip", "tot_unit", "res_unit", "bldgs",
            "lnd_area", "gr_sqft", "zoning", "yrb", "year4",
-           "owner", "geom_poly", "geom_point",
-           "hnum_lo", "hnum_hi", "str_name", "zip")) %>% 
+           "owner", "geom_poly",
+           "hnum_lo", "hnum_hi", "str_name", "zip"))) %>% 
   rename(bldgarea = gr_sqft,
          year = year4,
          ownername = owner,
          bldgclass = bldgcl) 
-
-rpad_check %>% 
-  tablist_qc(year4)
-
-rpad_check %>% 
-  tablist_qc(owner)
 
 rpad_final <- rpad_filt %>% 
   bind_rows(rpad_check) %>% 
