@@ -48,6 +48,7 @@ fig_path <- path("03_Output", "figs")
 web_path <- path("04_WebMap", "data")
 spatial_path <- path("03_Output", "spatial_files")
 colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
+alt_purple <- "#9057FF"
 
 # DB Connection
 con <- dbConnect(Postgres(),
@@ -696,6 +697,7 @@ fix_geom %>%
   equals(0) %>% 
   stopifnot()
 
+fix_geom
 # rows are dropping, but I think that's to be expected?
 # possibly condo vs. large building
 fix_geom_filt <- fix_geom %>% 
@@ -704,21 +706,23 @@ fix_geom_filt <- fix_geom %>%
   st_set_geometry("geometry") %>%
   select(-c("geom1")) %>% 
   group_by(bbl, year) %>% 
-  filter(row_number() == 1)
+  filter(row_number() == 1) %>% 
+  st_transform(4326)
+fix_geom_filt
 ```
 
 ```{r}
-nyu_assess_geo %>% 
+nyu_assess_fix <- nyu_assess_geo %>% 
   filter(!st_is_empty(geometry)) %>% 
-  bind_rows(fix_geom_filt) %>% 
+  bind_rows(fix_geom_filt)
+
+nyu_assess_fix %>% 
   filter(st_is_empty(geometry)) %>% 
   nrow() %>% 
   equals(0) %>% 
   stopifnot()
   
-nyu_assess_geo %>% 
-  filter(!st_is_empty(geometry)) %>% 
-  bind_rows(fix_geom_filt) %>%   
+ %>%   
   st_write(
     dsn = path(
       "04_WebMap",
@@ -729,6 +733,29 @@ nyu_assess_geo %>%
     delete_dsn = T
   )
 ```
+
+## Checking geometries and years
+```{r}
+nyu_assess_geo %>% 
+  filter(year == 1997) %>% 
+  st_transform(2263) %>% 
+  ggplot() +
+  #geom_sf(data = boro, fill = NA, color = "#777777") +
+  geom_sf(fill = colors[1], color = NA) +
+  theme_void()
+
+nyu_assess_geo %>% 
+  filter(year == 1997) %>%
+  st_set_crs(4326) %>%  
+  st_transform(2263) %>% 
+  st_difference(boro)
+
+test <- tbl(con, "mappluto_21v3") %>% 
+  head(10)
+
+test
+```
+
 ## Assessed value over time
 ```{r}
 # assess value over time
