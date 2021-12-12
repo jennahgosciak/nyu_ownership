@@ -77,15 +77,22 @@ nyu_acris <- dbGetQuery(con, paste0("SELECT p.*, m.*, l.property_type,
                                   'YOON, SOOK NYU CHUNG')"))
 nyu_acris
 
-nyu_acris %>%
-  tablist_qc(name)
-
 nyu_acris_filt <- nyu_acris %>%
   filter(doc_type != "EASE") %>% 
   arrange(desc(doc_date)) %>% 
   select(c("doc_date","bbl"), everything()) %>% 
   mutate(apt = case_when(!is.na(aptno) ~ 1,
-                         TRUE ~ 0))
+                         TRUE ~ 0)) %>% 
+  filter(name != "KEAT NYU, SOON")
+
+nyu_acris %>%
+  tablist_qc(name)
+
+nyu_acris %>%
+  tablist_qc(doc_type)
+
+nyu_acris %>%
+  tablist_qc(party_type)
 
 nyu_acris_filt %>% 
   mutate(doc_type = str_trim(doc_type)) %>% 
@@ -95,6 +102,9 @@ nyu_acris_filt %>%
   summarize(count = n()) %>% 
   filter(count > 0) %>% 
   arrange(-count)
+
+nyu_acris_filt %>% 
+  saveRDS(path(out, "nyu_acris.RDS"))
 ```
 
 Number of documents over time
@@ -107,50 +117,29 @@ nyu_acris_filt %>%
   mutate(count = n()) %>% 
   arrange(-count)
 
+# number of deeds, split by selling vs. buying
 nyu_acris_filt %>% 
-  select(c("document_id", "doc_date")) %>% 
-  unique() %>% 
-  group_by(doc_date) %>% 
-  mutate(count = n()) %>% 
-  ggplot() +
-  geom_line(aes(doc_date, count)) +
-  theme_classic() +
-  scale_y_continuous(limits = c(0,40)) +
-  scale_x_date(date_labels = "%Y",
-               date_breaks = "10 years",
-               limit = c(as.Date("1963-01-01"), as.Date("2021-01-01"))) +
-  labs(y = "Number of documents",
-       x = "Date")
-
-nyu_acris_filt  %>% 
-  select(c("document_id", "doc_date")) %>%
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  pivot_longer("party_type", names_to = "party", values_to = "party_value") %>% 
+  mutate(sale_type = if_else(party_value == 2, "Buying",
+                             "Selling")) %>% 
+  select(c("document_id", "doc_date", "sale_type")) %>% 
   unique() %>% 
   mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
-  group_by(doc_year) %>% 
+  group_by(doc_year, sale_type) %>% 
   summarize(count = n()) %>% 
   ggplot() +
-  geom_line(aes(doc_year, count)) +
+  geom_line(aes(doc_year, count, color = sale_type)) +
   theme_classic() +
-  scale_y_continuous(limits = c(0,600)) +
+  scale_y_continuous(limits = c(0,75)) +
   scale_x_continuous(limits = c(1960, 2021),
                   breaks = seq(1960, 2021, 10)) +
   labs(y = "Number of documents",
-       x = "Year")
+       x = "Year") +
+  scale_color_manual(values = colors[1:2])
 
-nyu_acris_filt  %>% 
-  select(c("document_id", "doc_date", "doc_type")) %>%
-  unique() %>% 
-  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
-  group_by(doc_year, doc_type) %>% 
-  summarize(count = n()) %>% 
-  ggplot() +
-  geom_line(aes(doc_year, count, fill = doc_type)) +
-  theme_classic() +
-  scale_y_continuous(limits = c(0,600)) +
-  scale_x_continuous(limits = c(1960, 2021),
-                  breaks = seq(1960, 2021, 10)) +
-  labs(y = "Number of documents",
-       x = "Year")
+ggsave(path(out, "sale_propert.pdf"))
 ```
 ```{r}
 copy_to(con, nyu_acris_filt,
@@ -158,9 +147,13 @@ copy_to(con, nyu_acris_filt,
   temporary = T
 )
 
-nyu_acris_pluto <- tbl(con, "nyu_acris_filt") %>% 
-  left_join(tbl(con, "mappluto_21v3"), by = "bbl") %>% 
-  as_tibble()
+orig_vars <- names(nyu_acris_filt)
+nyu_acris_pluto <- st_read(con, query = "SELECT a.*,
+                           m21.geom_poly as geom1,
+                           m02.geom_poly as geom2 FROM nyu_acris_filt as a
+                           LEFT JOIN mappluto_21v2 as m21 on m21.bbl = a.bbl
+                           LEFT JOIN mappluto_02b as m0b on m0b.bbl = a.bbl")
+
 
 nyu_acris_clean <- nyu_acris_pluto %>% 
   mutate(nyu_role = case_when(party_type == 2 ~ "Buyer",
@@ -177,15 +170,7 @@ nyu_acris_clean <- nyu_acris_pluto %>%
            "nyu_role", "doc_date", "doc_type", "min_date", "max_date",
            "name", "address"))
 
-nyu_acris_clean %>% 
-  filter(document_id == "FT_1650000478165")
-
-tbl(con, "acris_legals") %>% 
-  filter(bbl == "1000510015") %>% 
-  inner_join(tbl(con, "acris_parties"), by = "document_id") %>% 
-  inner_join(tbl(con, "acris_master"), by = "document_id") %>% 
-  filter(modified_date < as.Date("1990-01-01")) %>% 
-  select(c("doc_type"), everything()) %>% 
+nyu_acris_clean 
 ```
 
 

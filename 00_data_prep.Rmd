@@ -61,19 +61,12 @@ colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
 Purpose: to create a cleaned file of NYU properties 1998-2021
 Also runs other data-intensive tasks from the Furman database
 
-## Load earlier RPAD Files
 ```{r}
 tbl(con, "rpad_raw") %>% 
-  filter(bbl == '1009620001' | (str_detect(str_name, "EAST 30") & hnum_lo == "00433")) %>% 
-  select(c("year4", "owner"), everything()) %>% 
-  arrange(year4)
-
-rpad %>% 
-  filter(str_detect(str_name, "MAC DOUGAL")) %>% 
-  select(c("year4", "str_name", "bbl", "owner"), everything()) %>% 
-  as_tibble()
+  filter(year4 == 2000)
 ```
 
+## Load earlier RPAD Files
 ```{r}
 rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,
                       m.geom_point FROM rpad_raw as r
@@ -113,6 +106,10 @@ rpad_lt2002 %>%
 ```{r}
 # TEMP CODE
 rpad_lt2002 <- st_read(path(out, "rpad_nyu.geojson"))
+rpad_lt2002 %>% 
+  tablist_qc(year4)
+
+
 nyu_pluto <- st_read(path(out, "nyu_allyrs.geojson")) %>% 
   filter(year > 2001) %>% 
   as_tibble()
@@ -159,13 +156,17 @@ nyu_pluto %>%
 ```
 ## Try to identify some properties that aren't merging bc of missing data
 ```{r}
-copy_to(con, unmerged_rpad,
-  name = "unmerged_rpad", overwrite = T,
+rpad_lt2002 <- rpad_lt2002 %>% 
+  as_tibble() %>% 
+  select(-"geometry")
+
+copy_to(con, rpad_lt2002,
+  name = "rpad_lt2002", overwrite = T,
   temporary = T
 )
 
 rpad_check <- st_read(con, query = "SELECT r.* FROM rpad_raw as r
-                      INNER JOIN unmerged_rpad as unmgd on coalesce(r.bbl, r.bble, r.bbl_condo) = unmgd.bbl
+                      INNER JOIN rpad_lt2002 as unmgd on coalesce(r.bbl, r.bble, r.bbl_condo) = unmgd.bbl
                       LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
                       WHERE r.year4 < 2002 and r.year4 > 1996")
 
@@ -193,20 +194,26 @@ rpad_unmerged %>%
 
 rpad_final <- rpad_lt2002 %>% 
   as_tibble() %>% 
-  bind_rows(as_tibble(rpad_unmerged)) %>% 
+  bind_rows(rpad_unmerged %>% 
+              as_tibble()) %>% 
   unique()  %>% 
   rename(bldgarea = gr_sqft,
          year = year4,
          ownername = owner,
-         bldgclass = bldgcl)
+         bldgclass = bldgcl) %>% 
+  select(-c("bble", "ease")) %>% 
+  group_by(bbl, year) %>% 
+  mutate(drop_row = case_when(n() > 1 & !is.na(ownername) ~ 0,
+                              n() == 1 ~ 0,
+                              TRUE ~ 1)) %>% 
+  filter(drop_row == 0) 
 
 rpad_final %>% 
   as_tibble() %>% 
   verify(!is.na(year))
 
-nyu_pluto %>% 
-  as_tibble() %>% 
-  verify(!is.na(year))
+rpad_final %>% 
+  tablist_qc(year)
 
 rpad_final %>% 
   as_tibble() %>% 
@@ -217,20 +224,20 @@ nyu_upd <- bind_rows(as_tibble(nyu_pluto), rpad_final) %>%
   st_as_sf()
 
 nyu_upd %>% 
-  as_tibble() %>% 
-  verify(!is.na(year))
+  tablist_qc(year)
+
+rpad_final %>% 
+  verify(!is.na(year)) %>% 
+  tablist_qc(year)
+
+st_write(st_as_sf(rpad_final) %>% 
+           select(-"drop_row"), dsn = path(out, "rpad_upd.geojson"),
+         append = F,
+         dsn_delete = T)
 
 st_write(nyu_upd, dsn = path(out, "nyu_allyrs_upd.geojson"),
          append = F,
          dsn_delete = T)
-```
-
-## Test plot rpad early years
-```{r}
-nyu_upd %>% 
-  filter(year < 200)
-  ggplot() +
-  
 ```
 
 
