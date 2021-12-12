@@ -48,6 +48,16 @@ fig_path <- path("03_Output", "figs")
 web_path <- path("04_WebMap", "data")
 spatial_path <- path("03_Output", "spatial_files")
 colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
+
+# DB Connection
+con <- dbConnect(Postgres(),
+  user = "furmandata",
+  password = rstudioapi::askForPassword(),
+  host = "fcdata.c7h93yqbqnvu.us-east-1.rds.amazonaws.com",
+  port = 5432,
+  dbname = "fcdata",
+  bigint = "integer"
+)
 ```
 
 # Analysis: 1998-2021
@@ -99,9 +109,10 @@ nyu_pts <- st_read(path(out, "nyu_allyrs_pts.geojson")) %>%
   select(-"cd2") %>% 
   verify(!is.na(borough)) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
-                            "ARA HOLDINGS OF NYU LLC")))
+                            "ARA HOLDINGS OF NYU LLC"))) %>% 
+  filter(!(bbl == "3012920067"))
 
-nyu_poly <- st_read(path(out, "nyu_allyrs.geojson")) %>% 
+nyu_poly <- st_read(path(out, "nyu_allyrs_upd.geojson")) %>% 
   select(-any_of(drop_vars))%>%
   mutate(cd = ifelse(is.na(cd), cd2, cd),
          ownername = ifelse(is.na(ownername), str_trim(owner), str_trim(ownername))) %>% 
@@ -109,11 +120,13 @@ nyu_poly <- st_read(path(out, "nyu_allyrs.geojson")) %>%
   select(-"cd2") %>% 
   verify(!is.na(borough)) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
-                            "ARA HOLDINGS OF NYU LLC")))
+                            "ARA HOLDINGS OF NYU LLC"))) %>% 
+  filter(!(bbl == "3012920067"))
 
 nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>% 
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
-                            "ARA HOLDINGS OF NYU LLC")))
+                            "ARA HOLDINGS OF NYU LLC"))) %>% 
+  filter(!(bbl == "3012920067"))
 
 nyu_poly %>% 
   st_transform(4326) %>% 
@@ -175,12 +188,10 @@ nyu_poly %>%
   ggplot() +
   geom_sf(data = boro, color = "gray", fill = NA) +
   geom_sf(data = cds, color = "black", fill = NA, alpha = 0.5) +
-  geom_sf(data = streets %>% 
-            st_crop(ext) %>% 
-            select(c("post_type")), color = "gray", size = 1, fill = NA) +
+  # geom_sf(data = streets %>% 
+  #           st_crop(ext) %>% 
+  #           select(c("post_type")), color = "gray", size = 1, fill = NA) +
   geom_sf(fill = colors[1], color = NA) +
-  coord_sf(xlim = c(ext[1], ext[3]),ylim = c(ext[2], ext[4]),
-           expand = F) +
   theme_void()
 
 nyu_poly %>% 
@@ -277,7 +288,7 @@ map_interactive <- leaflet(nyu_leaflet) %>%
           lat = 40.7309, zoom = 14) %>% 
   addProviderTiles(provider = "CartoDB.DarkMatterNoLabels") %>% 
   addPolygons(color= "#9057FF", stroke = F,
-              label = ~address, fillOpacity = 1)
+              label = ~str_c(address, "\n", yearbuilt), fillOpacity = 1)
 map_interactive
 ```
 
@@ -350,7 +361,159 @@ expt_cd <- function(cds, shp, cd_num, yr) {
 # #ggsave(path(fig_path, "nyu_21_map.png"), height = 12.5, width = 20)
 ```
 
+## Map of Washington square park
+```{r}
+ggplot(nyu_21) +
+  geom_sf(data = boro %>% 
+            filter(BoroCode == 1), fill = NA, color = "white", size = 0.05) +
+  geom_sf(data = parks %>% 
+            filter(str_sub(parknum, 1, 1) == "M"), fill = "#777777", color = NA) +
+  geom_sf(fill = "#9057FF", color = NA) +
+  theme_void() +
+  theme(plot.background = element_rect(fill = '#424242'))
 
+ggsave(path(fig_path, "mn_map_nyu.pdf"), width = 9, height = 9)
+```
+
+
+## Produce summmary tables for 2021
+```{r}
+tbl1 <- nyu_21 %>% 
+  summarize(bldgarea_nyu = sum(bldgarea, na.rm = T),
+            lotarea_nyu = sum(lotarea, na.rm = T),
+            assessval_nyu = sum(assesstot, na.rm = T),
+            bbl_nyu = n_distinct(bbl))
+
+
+# load 2021 pluto
+tbl1 <- tbl(con, "mappluto_21v3") %>% 
+  filter(!(ownertype %in% c("C", "O"))) %>% 
+  summarize(bldgarea_total = sum(bldgarea, na.rm = T),
+            lotarea_total = sum(lotarea, na.rm = T),
+            assessval_tot = sum(assesstot, na.rm = T),
+            bbl_tot = n_distinct(bbl)) %>% 
+  as_tibble() %>% 
+  cbind(tbl1) %>% 
+  mutate(bldgarea_per = round(bldgarea_nyu * 100/ bldgarea_total, 2),
+         lotarea_per = round(lotarea_nyu * 100 / bldgarea_total, 2),
+         assessval_per = round(assessval_nyu * 100 / assessval_tot, 2),
+         bbl_per = round(bbl_nyu * 100 / bbl_tot, 2))
+
+tbl1
+
+tbl1 %>%
+  select(-c("bldgarea_total", "lotarea_total", "assessval_tot", "bbl_tot", "geometry")) %>% 
+  pivot_longer(everything()) %>% 
+  mutate(type = if_else(str_detect(name, "nyu"), "nyu", "per"),
+         name = str_replace_all(name, "(_nyu)|(_per)", "")) %>% 
+  pivot_wider(name, names_from = "type", values_from = "value") %>% 
+  ggplot(aes(reorder(name, desc(per)), per)) +
+  geom_col(fill = colors[1]) +
+  geom_text(aes(label = nyu), vjust = -1) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0, 3), breaks = c(0, 1, 2, 3)) +
+  labs(x = "",
+         y = "Percent of non-city owned properties")
+
+
+ggsave(path(fig_path, "nyu_prop_summ.pdf"))
+```
+
+```{r}
+# summary
+owner_summ <- tbl(con, "mappluto_21v3") %>% 
+  mutate(ownername = str_trim(str_remove_all(ownername, "[\\.,-:']")),
+         ownername = str_replace_all(ownername, "(CORP\\s|CORP$)", "CORPORATION")) %>% 
+  # filter out city and other public, state, or federal
+  filter(!(ownertype %in% c("C", "O"))) %>% 
+  # filter out unknown
+  filter(!(ownername %in% c("UNAVAILABLE OWNER", "NAME NOT ON FILE",
+                            "NATIONAL PARK SERVICE",
+                            "UNITED STATES OF AMERICA",
+                            "PORT AUTHORITY OF NY AND NJ",
+                            "UNITED STATES POSTAL SERVICE",
+                            "MTA  LIRR",
+                            "NYS DEPARTMENT OF TRANSPORTATION",
+                            "MTA  STATEN ISLAND RAILWAY",
+                            "HOUSING TRUST FUND CORPORATION",
+                            "NYC DEPARTMENT OF ENVIRONMENTAL PROTECTION",
+                            "NYS DIV OF LANDS AND FORESTS",
+                            "DORMITORY AUTHORITY OF THE STATE OF NEW YORK",
+                            "NYC TRANSIT AUTHORITY",
+                            "NYS DEPARTMENT OF ENVIRONMENTAL CONSERVATION",
+                            "CONSOLIDATED EDISON COOF NYINC",
+                            "NYC DEPARTMENT OF TRANSPORTATION",
+                            "CITY OF NEW YORK",
+                            "MTA METRO NORTH",
+                            "NYC HOUSING AUTHORITY",
+                            "METROPOLITAN TRANSPORTATION AUTHORITY",
+                            "HOUSING TRUST FUND CORP",
+                            "USPS",
+                            "NYS OFFICE OF GENERAL SERVICES",
+                            "MTA  METRO NORTH",
+                            "NYC HOUSING DEVELOPMENT CORPORATION"
+                            ))) %>% 
+  group_by(ownername) %>% 
+  summarize(bldgarea_total = sum(bldgarea, na.rm = T),
+            lotarea_total = sum(lotarea, na.rm = T),
+            assessval_tot = sum(assesstot, na.rm = T),
+            bbl_tot = n_distinct(bbl)) %>% 
+  ungroup() %>% 
+  arrange(desc(bldgarea_total))  %>% 
+  as_tibble()
+
+# owner_summ_city <- tbl(con, "mappluto_21v3") %>% 
+#   filter(!(ownername %in% c("UNAVAILABLE OWNER", "NAME NOT ON FILE"))) %>% 
+#   group_by(ownername) %>% 
+#   summarize(bldgarea_total = sum(bldgarea, na.rm = T),
+#             lotarea_total = sum(lotarea, na.rm = T),
+#             assessval_tot = sum(assesstot, na.rm = T),
+#             bbl_tot = n_distinct(bbl)) %>% 
+#   ungroup() %>% 
+#   arrange(desc(bldgarea_total)) %>% 
+#   as_tibble()
+
+# Top ownership tables
+owner_summ
+owner_summ_city
+
+owner_summ %>% 
+  arrange(desc(bbl_tot))
+```
+
+## Graph of top ownership in NYC in 2021
+```{r, fig.width = 10}
+owner_summ %>% 
+  head(10) %>% 
+  mutate(owner_form = str_to_sentence(ownername),
+         bldgarea_total = bldgarea_total / 1000) %>% 
+  ggplot(aes(reorder(owner_form, bldgarea_total), bldgarea_total))+
+  geom_col(fill = colors[1]) +
+  geom_text(aes(label = round(bldgarea_total)), hjust = 1.2, color = "white") +
+  coord_flip() +
+  theme_classic() +
+  scale_y_continuous(limits = c(0, 18000)) +
+  labs(y = "Building sq. ft.",
+       x = "")
+
+ggsave(path(fig_path, "ranking_bldsqft.pdf"))
+
+owner_summ %>%
+  arrange(desc(bbl_tot)) %>% 
+  head(10) %>% 
+  mutate(owner_form = str_to_sentence(ownername)) %>% 
+  ggplot(aes(reorder(owner_form, bbl_tot), bbl_tot))+
+  geom_col(fill = colors[1]) +
+  geom_text(aes(label = bbl_tot), hjust = 1.2, color = "white") +
+  coord_flip() +
+  theme_classic() +
+  scale_y_continuous(limits = c(0, 180)) +
+  labs(y = "Number of buildings",
+       x = "")
+
+ggsave(path(fig_path, "ranking_nbld.pdf"))
+```
+## Prep dat for interactive map
 ```{r}
 # create a dataframe of the properties
 nyu_df <- nyu_poly %>% 
@@ -398,11 +561,6 @@ tax_rate <- read_csv(path(inp, "Property_Tax_Rates_by_Tax_Class.csv")) %>%
 tax_rate
 ```
 
-
-```{r, warning = F}
-assessed_value_avg %>% 
-  filter(year == 2021)
-```
 ```{r}
 # load assessed_value_avg
 assessed_value_avg <- readRDS(path(out, "assess_value_averages.RDS"))
