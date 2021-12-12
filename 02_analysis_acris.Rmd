@@ -104,11 +104,13 @@ nyu_acris_filt %>%
   arrange(-count)
 
 nyu_acris_filt %>% 
-  saveRDS(path(out, "nyu_acris.RDS"))
+  saveRDS(path(fig_out, "nyu_acris.RDS"))
 ```
 
 Number of documents over time
 ```{r}
+nyu_acris_filt  <- readRDS(path(out, "nyu_acris.RDS"))
+
 nyu_acris_filt %>% 
   filter(!is.na(doc_date)) %>% 
   select(c("document_id", "doc_date")) %>% 

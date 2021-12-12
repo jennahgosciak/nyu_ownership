@@ -40,6 +40,7 @@ library(leaflet)
 library(haven)
 library(geojsonsf)
 library(s2)
+library(geoclient)
 source("99_common.R")
 out <- "03_Output"
 inp <- "01_Input"
@@ -139,10 +140,7 @@ nyu_poly %>%
   st_write(dsn = path(web_path, "nyu_allyrs.geojson"),
            delete_dsn = T,
            append = F)
-# checking not missing year
-nyu_poly %>% 
-  as_tibble() %>% 
-  verify(!is.na(year))
+
 nyu_pts %>% 
   st_transform(4326) %>% 
   st_write(dsn = path(web_path, "nyu_allyrs_pts.geojson"),
@@ -168,8 +166,8 @@ boro <- st_read(url_boro) %>%
 cds <- st_read(url_cds)  %>% 
   st_transform(2263)
 # load parks
-parks <- st_read(url_parks) %>% 
-  st_transform(2263)
+# parks <- st_read(url_parks) %>% 
+#   st_transform(2263)
 # load nhood
 nhood <- st_read(url_nhood)  %>% 
   st_transform(2263)
@@ -495,15 +493,8 @@ ggsave(path(fig_path, "ranking_nbld.pdf"))
 ```{r}
 # create a dataframe of the properties
 nyu_df <- nyu_poly %>% 
-  select(-any_of(drop_vars)) %>% 
-  mutate(geom_point = geometry)
+  select(-any_of(drop_vars))
 nyu_df
-nyu_df %>% 
-  filter(year == 1999)
-nyu_df %>% 
-  filter(bbl == "1009364222") %>% 
-  as_tibble() %>% 
-  select(c("year"), everything())
 ```
 ```{r}
 # number of buildings by year
@@ -602,7 +593,6 @@ nyu_assess_geo %>%
 ```
 
 ```{r}
-library(geoclient)
 geoms2geocode <- nyu_assess_geo %>% 
   filter(st_is_empty(geometry)) %>% 
   as_tibble() %>% 
@@ -664,6 +654,9 @@ nyu_assess_fix %>%
   nrow() %>% 
   equals(0) %>% 
   stopifnot()
+
+nyu_assess_fix %>% 
+  tablist_qc(year)
   
 nyu_assess_fix %>%   
   st_write(
@@ -677,26 +670,8 @@ nyu_assess_fix %>%
   )
 ```
 
-## Checking geometries and years
-```{r}
-nyu_assess_geo %>% 
-  filter(year == 1997) %>% 
-  st_transform(2263) %>% 
-  ggplot() +
-  #geom_sf(data = boro, fill = NA, color = "#777777") +
-  geom_sf(fill = colors[1], color = NA) +
-  theme_void()
-nyu_assess_geo %>% 
-  filter(year == 1997) %>%
-  st_set_crs(4326) %>%  
-  st_transform(2263) %>% 
-  st_difference(boro)
-test <- tbl(con, "mappluto_21v3") %>% 
-  head(10)
-test
-```
-
-## Assessed value over time
+# Assessed value over time
+* Due to data issues, only 2001 to 2021
 ```{r}
 # assess value over time
 nyu_assess_value %>% 
