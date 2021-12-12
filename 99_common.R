@@ -83,10 +83,11 @@ tablist_qc <- function(x, ...) {
     pander::pandoc.table(split.tables = Inf, multi.line = TRUE)
 }
 
+# to remove repetitive code,
+# general cleaning process for spatial data
 clean_base_file <- function(df) {
   df %>% 
     unique() %>% 
-    select(-any_of(drop_vars)) %>%
     mutate(cd = ifelse(is.na(cd), cd2, cd),
            ownername = ifelse(is.na(ownername), str_trim(owner), str_trim(ownername))) %>% 
     mutate(borough = str_sub(cd, 1, 1)) %>% 
@@ -102,4 +103,46 @@ clean_base_file <- function(df) {
     mutate(address_form = case_when(!is.na(address) ~ address,
                                     !is.na(str_name) ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", "),
                                     TRUE ~ NA_character_))
+}
+
+# function to clip and export by cd in 2021
+# programmatically exporting plots
+expt_cd <- function(cds, shp, cd_num, yr, path1, path2, streets, parks) {
+  cd_clip <- cds %>% 
+    filter(boro_cd == cd_num)
+  
+  ext <- cd_clip %>% 
+    st_bbox()
+  
+  
+  cd_clip %>% 
+    st_write(dsn = path(path1, paste0("cd_", cd_num, ".geojson")),
+             delete_dsn = T,
+             append = F)
+  
+  shp %>% 
+    filter(year == yr) %>% 
+    st_join(cd_clip, join = st_intersects) %>%
+    st_write(dsn = path(path1, paste0("nyu_cd_", cd_num, "_", yr, ".geojson")),
+             delete_dsn = T,
+             append = F)
+  
+  # create an export plot
+  shp %>% 
+    filter(year == yr) %>% 
+    ggplot() +
+    geom_sf(data = streets %>% 
+              st_crop(ext) %>% 
+              select(c("post_type")), 
+            color = "white", size = 0.5, fill = NA) +
+    geom_sf(data = parks,
+            fill = "#777777", color = NA) +
+    geom_sf(fill = "#9057FF", color = NA) +
+    geom_sf(data = cds, color = "blue", fill = NA, size = 3) +
+    coord_sf(xlim = c(ext[1], ext[3]), ylim = c(ext[2], ext[4]),
+             expand = F) +
+    theme_void() +
+    theme(plot.background = element_rect(fill = '#424242'))
+  
+  ggsave(path(path2, paste0("nyu_cd_", cd_num, "_", yr, ".pdf")))
 }

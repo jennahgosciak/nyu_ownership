@@ -61,11 +61,6 @@ colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
 Purpose: to create a cleaned file of NYU properties 1998-2021
 Also runs other data-intensive tasks from the Furman database
 
-```{r}
-tbl(con, "rpad_raw") %>% 
-  filter(year4 == 2000)
-```
-
 ## Load earlier RPAD Files
 ```{r}
 rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,
@@ -238,6 +233,8 @@ nrow(pluto2008_nyu)
 
 ## Load all other PLUTO Files
 ```{r}
+# loads data naively--by just detecting NYU's name
+# used for checking the accuracy of results
 check_extract <- function(con, tblname) {
   df1 <- tbl(con, tblname) %>%
     mutate(ownername = str_replace_all(ownername, "[:punct:]", "")) %>%
@@ -316,6 +313,7 @@ nyu_21
 
 Export output
 ```{r}
+# variables to drop for clean exporting
 drop_vars <- c("shape_area",
                "strgearea",
                "garagearea",
@@ -356,12 +354,15 @@ nyu_pluto_app %>%
 ```
 
 ```{r}
+# using the function written above
+# checks that nothing is incorrectly categorized or beign missed
 check_names <- map_dfr(tblnames, ~ check_extract(con, .)) %>%
   unique()
 
 check_names %>%
   write.xlsx(path(out, "check_names.xlsx"), overwrite = T)
 
+# uses anti join to check
 check_names %>%
   anti_join(nyu_pluto_app, by = "ownername") %>%
   write.xlsx(path(out, "check_unmg_names.xlsx"), overwrite = T)
@@ -397,6 +398,12 @@ check_pluto <- function(con, tbl, yr) {
     as_tibble()
 }
 
+# another file for checking
+# performs inner joins by year to see what might merge onto
+# unmerged records
+
+# idea is to see if buildings in later years that aren't merging are
+# real or if they are just data errors
 full_check <- map2_dfr(tblnames, years, ~ check_pluto(con, .x, .y))
 full_check %>%
   write.xlsx(path(out, "unmgd_by_year.xlsx"), overwrite = T)
