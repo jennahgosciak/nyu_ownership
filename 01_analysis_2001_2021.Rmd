@@ -92,7 +92,7 @@ conversion_factors
 ```{r}
 # read in point data
 nyu_pts <- st_read(path(out, "nyu_allyrs_pts.geojson")) %>% 
-  filter(year >= 2001 | year == 1998) %>% 
+  filter(year >= 2001) %>% 
   clean_base_file()
 
 nyu_poly <- st_read(path(out, "nyu_allyrs.geojson")) %>% 
@@ -150,9 +150,6 @@ nyu_poly %>%
   ggplot() +
   geom_sf(data = boro, color = "gray", fill = NA) +
   geom_sf(data = cds, color = "black", fill = NA, alpha = 0.5) +
-  geom_sf(data = streets %>%
-            st_crop(ext) %>%
-            select(c("post_type")), color = "gray", size = 1, fill = NA) +
   geom_sf(fill = colors[1], color = NA) +
   theme_void()
 
@@ -580,7 +577,7 @@ nyu_assess_fix %>%
   
 nyu_assess_fix %>% 
   # make sure not to include earlier years
-  filter(year >= 2021) %>% 
+  filter(year >= 2001) %>% 
   st_write(
     dsn = path(
       "04_WebMap",
