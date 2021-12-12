@@ -1,7 +1,4 @@
 # Methodology
-
-[TOC]
-
 ## [Cleaning](https://github.com/jennahgosciak/nyu_ownership/blob/main/00_data_prep.Rmd)
 
 1. I pulled the [New York City Department of Finance Real Property Assessment Data (RPAD)](https://www1.nyc.gov/site/finance/taxes/property-assessments.page) from the Furman Center database for years prior to 2002. To extract NYU's ownership I used a regular expression. I also merged the file onto 2002 PLUTO data, which is also located on the Furman Center's database. PLUTO stands for the [New York City Department of City Planning Primary Land Use Tax Output data](https://www1.nyc.gov/site/planning/data-maps/open-data/dwn-pluto-mappluto.page). I renamed some of the variables and restricted the variables for the analysis.
