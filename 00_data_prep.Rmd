@@ -61,8 +61,10 @@ colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
 Purpose: to create a cleaned file of NYU properties 1998-2021
 Also runs other data-intensive tasks from the Furman database
 
+## Loading RPAD data for all years
 * Checking differences between bbl_condo and bbl_unit
 * bbl_unit doesn't seem useful, doesn't appear in PLUTO
+* Extracting NYU ownership from all years of RPAD data (rpad_raw_with_pts)
 ```{r}
 tbl(con, "rpad_raw") %>% 
   filter(year4 == 1999) %>% 
