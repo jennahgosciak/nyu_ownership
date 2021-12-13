@@ -426,6 +426,9 @@ tbl1 %>%
   labs(x = "",
          y = "Percent of non-city owned properties")
 ggsave(path(fig_path, "nyu_prop_summ.pdf"))
+
+tbl(con, "mappluto_21v3") %>% 
+  filter(ownername == "NATIONAL PARK SERVICE")
 ```
 
 ```{r}

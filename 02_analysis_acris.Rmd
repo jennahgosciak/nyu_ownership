@@ -5,13 +5,13 @@ date: "`r format(Sys.Date(), '%B %d, %Y')`"
 knit: (function(inputFile, encoding) { 
   rmarkdown::render(inputFile,
   encoding=encoding,
-  output_file="analysis_2021.html")})
+  output_file="02_analysis_acris.html")})
 output:
   html_document:
     toc: true
     theme: paper
 ---
-```{r setup, include=FALSE}
+```{r, include=FALSE}
 knitr::opts_chunk$set(
   echo = TRUE, message = F, warning = F,
   fig.width = 6, fig.height = 10
