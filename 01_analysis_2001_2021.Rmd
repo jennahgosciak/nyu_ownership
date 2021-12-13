@@ -84,8 +84,7 @@ conversion_factors <- cpi %>%
 conversion_factors
 ```
 
-
-## Load adta
+## Load data
 * Points
 * Polygons
 * Just 2021
@@ -115,10 +114,50 @@ rpad_allyrs %>%
   tablist_qc(ownername)
 
 rpad_allyrs
+```
+```{r}
+rpad_geo <- rpad_allyrs %>% 
+  mutate(across(c("hnum_lo", "hnum_hi"), ~str_replace_all(., "O", "0"))) %>% 
+    mutate(hnum_lo = if_else(is.na(hnum_lo), hnum_hi, hnum_lo),
+           address_form = case_when(!is.na(str_name) ~ str_c(paste(as.numeric(hnum_lo), 
+                                                                    str_to_sentence(str_trim(str_name))), 
+                                                                   "New York", "New York", zip, sep = ", "),
+                                    TRUE ~ NA_character_),
+           address_form = case_when(hnum_lo == "00000001 1/2"  | hnum_lo == "1 1/2" ~ 
+                                      "1 1/2 Waverly Place, New York, New York 10003",
+                                    address_form == "425 Main street, New York, New York, 0" ~ 
+                                      "425 Main street , New York, New York, 10044",
+                                    address_form == "NA West tremont avenue, New York, New York, 0" ~ 
+                                      "500 Mac Cracken Avenue, New York, New York, 10453",
+                                    address_form == "NA River road, New York, New York, 0" ~
+                                      "2 River Avenue, New York, New York, 10463",
+                                    TRUE ~ address_form),
+           ) %>% 
+  geo_search_data(address_form) %>% 
+  mutate(bbl_geo = bbl) %>% 
+  select(matches("input"), "no_results", "bbl_geo") %>%
+  cbind(rpad_allyrs) %>% 
+  verify(!is.na(no_results)) 
+rpad_geo %>% 
+  tablist_qc(no_results)
 
-tbl(con, "rpad_raw_with_pts") %>% 
-  filter(year4 == 2021) %>% 
-  head(10)
+## merge to pluto 21
+copy_to(con, rpad_geo,
+  name = "rpad_geo", overwrite = T,
+  temporary = T
+)
+
+rpad_geo_merge <- st_read(con, query = "SELECT r.*, m.geom_point FROM rpad_geo as r
+                          LEFT JOIN mappluto_21v3 as m on r.bbl_geo = m.bbl") %>% 
+  as_tibble()
+rpad_geo_merge
+
+rpad_geo_merge %>% 
+  rename(address_form = input_location) %>% 
+  mutate(geom_point = st_jitter(geom_point, factor = 0.002)) %>% 
+  st_write(path(web_path, "rpad_geo.geojson"),
+           append = F,
+           dsn_delete = T)
 ```
 ## Loading background shapefiles for context maps
 ```{r}
@@ -651,12 +690,23 @@ ggsave(path(fig_path, "estimated_taxes_cum.pdf"))
 
 # Analysis of number of buildings
 ```{r}
+nyu_poly  %>% 
+  unique() %>% 
+  mutate(borough = str_sub(cd, 1, 1),
+         borough = recode(borough, "3" = "Brooklyn", "1" = "Manhattan",
+                          "2" = "Bronx", "5" = "Staten Island",
+                          "4" = "Queens")) %>% 
+  filter(borough == "Bronx") %>% 
+  group_by(year) %>% 
+  summarize(n = n())
+
 nyu_poly %>% 
   mutate(borough = recode(borough, "3" = "Brooklyn", "1" = "Manhattan",
                           "2" = "Bronx", "5" = "Staten Island",
                           "4" = "Queens"))  %>% 
-  filter(borough != "Bronx") %>% 
-  mutate(borough = factor(borough, levels = c("Manhattan", "Brooklyn"),
+  #filter(borough != "Bronx") %>% 
+  mutate(borough = factor(borough, levels = c("Manhattan", "Brooklyn",
+                                              "Bronx"),
                           ordered = T)) %>% 
   verify(!is.na(borough)) %>% 
   group_by(year, borough) %>% 
@@ -694,8 +744,9 @@ nyu_area <- nyu_poly %>%
 
 # stacked area graph
 nyu_area %>% 
-  filter(borough == "Manhattan" | borough == "Brooklyn") %>% 
-  mutate(borough = factor(borough, levels = c("Manhattan", "Brooklyn"),
+  mutate(borough = factor(borough, levels = c("Manhattan", 
+                                              "Brooklyn",
+                                              "Bronx"),
                           ordered = T)) %>% 
   select(c("borough", "year", "bldgarea_total_boro")) %>% 
   unique() %>% 
@@ -711,8 +762,173 @@ nyu_area %>%
   labs(x = "Year",
        y = "Square feet in thousands") +
   scale_fill_manual(values = colors) +
-  scale_x_continuous(limits = c(2001, 2021),
-                     breaks = seq(2001, 2021, 2))
+  scale_x_continuous(limits = c(1997, 2021),
+                     breaks = seq(1997, 2021, 2))
 
 ggsave(path(fig_path, "area_1.pdf"))
 ```
+
+# Repeat the above analyses with 
+# Analysis of number of buildings
+```{r}
+rpad_allyrs  %>% 
+  verify_isid(c("bbl", "year")) %>% 
+  mutate(borough = str_sub(cd, 1, 1),
+         borough = recode(borough, "3" = "Brooklyn", "1" = "Manhattan",
+                          "2" = "Bronx", "5" = "Staten Island",
+                          "4" = "Queens")) %>% 
+  filter(borough == "Bronx") %>% 
+  nrow()
+
+rpad_allyrs %>% 
+  mutate(borough = str_sub(cd, 1, 1),
+         borough = recode(borough, "3" = "Brooklyn", "1" = "Manhattan",
+                          "2" = "Bronx", "5" = "Staten Island",
+                          "4" = "Queens"))  %>% 
+  #filter(borough != "Bronx") %>% 
+  mutate(borough = factor(borough, levels = c("Manhattan", "Brooklyn",
+                                              "Bronx"),
+                          ordered = T)) %>% 
+  verify(!is.na(borough)) %>% 
+  group_by(year, borough) %>% 
+  summarize(count = n_distinct(bbl)) %>% 
+  ggplot() +
+  geom_area(aes(year, count, fill = borough)) +
+  scale_y_continuous(limits = c(0, 300)) +
+  scale_x_continuous(limits = c(1997, 2021),
+                     breaks = seq(1997, 2021, 2)) +
+  theme_classic() +
+  labs(x = "Year",
+       y = "Number of buildings") +
+  scale_fill_manual(values = colors)
+
+ggsave(path(fig_path, "num_bld_time_rpad.pdf"))
+```
+
+# Analysis of square footage (building or floor square footage)
+```{r}
+nyu_area_rpad <- rpad_allyrs %>% 
+  verify_isid(c("bbl", "year")) %>%
+  verify(!is.na(bldgarea))  %>% 
+  mutate(borough = str_sub(cd, 1, 1),
+         borough = recode(borough, "3" = "Brooklyn", "1" = "Manhattan",
+                          "2" = "Bronx", "5" = "Staten Island",
+                          "4" = "Queens")) %>% 
+  group_by(borough, year) %>%
+  summarize(bldgarea_total_boro = sum(bldgarea, na.rm = T))  %>% 
+  group_by(year) %>%
+  mutate(bldgarea_total = sum(bldgarea_total_boro, na.rm = T)) %>% 
+  rowwise() %>%
+  mutate(bldgarea_share = round(bldgarea_total_boro * 100 / bldgarea_total)) %>% 
+  ungroup() %>% 
+  mutate(across(c("bldgarea_total", "bldgarea_total_boro"), ~./1000))
+
+# stacked area graph
+nyu_area_rpad %>% 
+  #filter(borough == "Manhattan" | borough == "Brooklyn") %>% 
+  mutate(borough = factor(borough, levels = c("Manhattan", "Brooklyn",
+                                              "Bronx"),
+                          ordered = T)) %>% 
+  select(c("borough", "year", "bldgarea_total_boro")) %>% 
+  unique() %>% 
+  rename(bldgarea_total = bldgarea_total_boro) %>% 
+  # bind_rows(
+  #   nyu_area %>% 
+  #   select(c( "year", "bldgarea_total")) %>% 
+  #   unique() %>% 
+  #   mutate(borough = "Total")) %>% 
+  ggplot() +
+  geom_area(aes(year, bldgarea_total, fill = borough)) +
+  theme_classic() +
+  labs(x = "Year",
+       y = "Square feet in thousands") +
+  scale_fill_manual(values = colors) +
+  scale_x_continuous(limits = c(1997, 2021),
+                     breaks = seq(1997, 2021, 2))
+
+ggsave(path(fig_path, "area_rpad.pdf"))
+```
+
+## Comparison of 2002 vs. 2021 via maps
+```{r}
+nyu_pts  %>% 
+  filter(year == 2002 | year == 2021)  %>% 
+  as_tibble() %>% 
+  verify(!is.na(cd)) %>% 
+  mutate(boro_cd = as.character(cd)) %>% 
+  group_by(boro_cd, year) %>% 
+  summarize(n_bld = n_distinct(bbl)) %>% 
+  inner_join(cds, ., by = "boro_cd")  %>% 
+  ggplot() +
+  geom_sf(data = boro, fill = NA, color = "white", size = 0.01) +
+  geom_sf(aes(fill = n_bld), color = NA) +
+  geom_sf_text(aes(label = n_bld), size = 2, color = "white") +
+  theme_void()  +
+  theme(
+    panel.border = element_blank(),
+    axis.text = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = '#A5A5A5', color = NA),
+    panel.background = element_rect(fill = '#A5A5A5', color = NA)
+  ) +
+  scale_fill_gradient(
+    low = "#CCB7E5",
+    high = alt_purple) +
+  facet_grid(cols = vars(year))
+
+ggsave(path(fig_path, "nyu_pts_year_comp.pdf"), width = 9, height = 9)
+
+rpad_allyrs %>% 
+  verify_isid(c("bbl", "year")) %>% 
+  filter(year == 2002 | year == 2021)  %>% 
+  as_tibble() %>% 
+  verify(!is.na(cd)) %>% 
+  mutate(boro_cd = as.character(cd)) %>% 
+  group_by(boro_cd, year) %>% 
+  summarize(n_bld = n_distinct(bbl)) %>%
+  inner_join(cds, ., by = "boro_cd") %>% 
+  ggplot() +
+  geom_sf(data = boro, fill = NA, color = "white", size = 0.01) +
+  geom_sf(aes(fill = n_bld), color = NA) +
+  geom_sf_text(aes(label = n_bld), size = 2, color = "white") +
+  theme_void()  +
+  theme(
+    panel.border = element_blank(),
+    axis.text = element_blank(),
+    panel.grid = element_blank(),
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = '#A5A5A5', color = NA),
+    panel.background = element_rect(fill = '#A5A5A5', color = NA)
+  ) +
+  scale_fill_gradient(
+    low = "#CCB7E5",
+    high = alt_purple) +
+  facet_grid(cols = vars(year))
+
+ggsave(path(fig_path, "nyu_rpad_year_comp.pdf"), width = 9, height = 9)
+
+rpad_allyrs %>% 
+  filter(str_sub(cd, 1, 1) == 3) %>% 
+  filter(year == 2021) %>% 
+  select("cd", everything()) %>% 
+  arrange(cd)
+
+rpad_allyrs %>% 
+  filter(cd == 106)
+
+rpad_allyrs %>% 
+  filter(str_detect(str_name, "MAIN")) %>% 
+  select(c("year"), everything())
+
+rpad_allyrs %>% 
+  tablist_qc(exmtcl)
+
+rpad_allyrs %>% 
+  #filter(bbl != bbl_condo) %>%
+  arrange(-year) %>% 
+  select(c("year", "ownername"), everything())
+``` 
+
+
+

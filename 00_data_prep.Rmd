@@ -97,7 +97,8 @@ rpad_allyrs_pts %>%
   arrange(year4) %>% 
   tablist_qc(year4)
 
-rpad_allyrs_pts
+rpad_allyrs_pts %>% 
+  select(matches("PYMK"))
 
 rpad_allyrs_pts %>% 
   select(c("bble", "bbl", "bbl_condo",  "cd_rpad",
@@ -112,6 +113,18 @@ rpad_allyrs_pts %>%
          ownername = owner,
          bldgclass = bldgcl) %>% 
   saveRDS(path(out, "rpad_allyrs_pts.RDS"))
+
+tbl(con, "rpad__main_raw") %>% 
+  group_by(year) %>% 
+  summarize(n = n())
+
+tbls <- dbListTables(con)
+
+tbls[str_detect(tbls, "rpad")]
+
+tbl(con, "rpad_raw_old") %>% 
+  filter(year4 == 2017) %>% 
+  head(10)
 ```
 
 
@@ -495,3 +508,5 @@ assessed_value_avg_2008 %>%
 assessed_value_avg_2008 %>% 
   write_csv(path(out, "assess_value_averages.csv"))
 ```
+
+

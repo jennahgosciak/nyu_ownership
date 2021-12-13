@@ -101,7 +101,9 @@ clean_base_file <- function(df) {
     mutate(bbl = case_when(bbl == "2057530140" ~ "2057520121",
                            TRUE ~ bbl)) %>% 
     mutate(address_form = case_when(!is.na(address) ~ address,
-                                    !is.na(str_name) ~ str_c(as.numeric(hnum_lo), str_name, "NEW YORK", "NEW YORK", zip, sep = ", "),
+                                    !is.na(str_name) ~ str_c(paste(as.numeric(hnum_lo), 
+                                                                    str_to_sentence(str_name)), 
+                                                                   "New York", "New York", zip, sep = ", "),
                                     TRUE ~ NA_character_))
 }
 
