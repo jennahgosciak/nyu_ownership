@@ -148,11 +148,11 @@ copy_to(con, rpad_geo,
 )
 
 rpad_geo_merge <- st_read(con, query = "SELECT r.*, m.geom_point FROM rpad_geo as r
-                          LEFT JOIN mappluto_21v3 as m on r.bbl_geo = m.bbl") %>% 
+                          LEFT JOIN mappluto_21v3 as m on r.bbl_geo = m.bbl")  %>% 
+  st_transform(4326) %>% 
   as_tibble()
-rpad_geo_merge %>% 
-  filter(st_is_empty(geometry)) %>% 
-  as_tibble()
+
+rpad_geo_merge
 
 # replace missing values
 # manually for one address
@@ -168,17 +168,19 @@ replace_address <- tibble(address_form = c("158 East 34 street, New York, New Yo
 replace_address
 
 rpad_geo_fix <- rpad_geo_merge %>%
-  st_transform(4326) %>% 
-  # rename(address_form = input_location) %>%
-  # mutate(geom_point = st_jitter(geom_point, factor = 0.002)) %>% 
+  rename(address_form = input_location) %>%
   as_tibble() %>% 
   left_join(replace_address, by = "address_form") %>% 
-  mutate(geometry = ifelse(st_is_empty(geometry), geom_new, geometry)) %>% 
+  mutate(geom_point = ifelse(st_is_empty(geom_point), geom_new, geom_point)) %>% 
   select(-"geom_new") %>% 
-  st_set_geometry("geometry")
+  st_set_geometry("geom_point") %>% 
+  group_by(bbl_condo) %>% 
+  # if more than one per buildings etc.
+  mutate(geom_point = ifelse(n() > 1, st_jitter(geom_point, factor = 0.0002), geom_point)) %>% 
+  ungroup()
 
 rpad_geo_fix %>% 
-  filter(st_is_empty(geometry)) %>% 
+  filter(st_is_empty(geom_point)) %>% 
   nrow() %>% 
   equals(0) %>% 
   stopifnot()
