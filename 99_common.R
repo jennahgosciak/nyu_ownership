@@ -100,11 +100,21 @@ clean_base_file <- function(df) {
     filter(!(str_detect(ownername, "POLYTECHNIC"))) %>% 
     mutate(bbl = case_when(bbl == "2057530140" ~ "2057520121",
                            TRUE ~ bbl)) %>% 
-    mutate(address_form = case_when(!is.na(address) ~ address,
+    mutate(hnum_lo = if_else(is.na(hnum_lo), hnum_hi, hnum_lo),
+           address_form = case_when(!is.na(address) ~ address,
                                     !is.na(str_name) ~ str_c(paste(as.numeric(hnum_lo), 
-                                                                    str_to_sentence(str_name)), 
-                                                                   "New York", "New York", zip, sep = ", "),
-                                    TRUE ~ NA_character_))
+                                                                   str_to_sentence(str_trim(str_name))), 
+                                                             "New York", "New York", zip, sep = ", "),
+                                    TRUE ~ NA_character_),
+           address_form = case_when(hnum_lo == "00000001 1/2"  | hnum_lo == "1 1/2" ~ 
+                                      "1 1/2 Waverly Place, New York, New York 10003",
+                                    address_form == "425 Main street, New York, New York, 0" ~ 
+                                      "425 Main street , New York, New York, 10044",
+                                    address_form == "NA West tremont avenue, New York, New York, 0" ~ 
+                                      "500 Mac Cracken Avenue, New York, New York, 10453",
+                                    address_form == "NA River road, New York, New York, 0" ~
+                                      "2 River Avenue, New York, New York, 10463",
+                                    TRUE ~ address_form))
 }
 
 # function to clip and export by cd in 2021
