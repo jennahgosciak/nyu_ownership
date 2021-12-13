@@ -14,7 +14,6 @@ var map = new maplibregl.Map({
 });
 
 const years = [
-  2001,
   2002,
   2003,
   2004,
@@ -64,7 +63,7 @@ map.on('load',function(){
   })
 
   // Set filter to 1998
-  filterBy(1997);
+  filterBy(2002);
 
   document.getElementById('slider').addEventListener('input', (e) => {
   const yr = parseInt(e.target.value, 10);

@@ -57,9 +57,8 @@ map.on('load',function(){
     'id':'nyu',
     'type': 'symbol',
     'source':'nyu_data',
-    'layout': {},
     'paint': {
-      'circle-radius': 6,
+      'circle-radius': 10,
       'circle-color':  "#9057FF"
     },
   })
