@@ -180,7 +180,7 @@ rpad_geo_fix <- rpad_geo_merge %>%
   st_set_geometry("geom_point") %>% 
   group_by(bbl_condo) %>% 
   # if more than one per buildings etc.
-  mutate(geom_point = ifelse(n() > 1, st_jitter(geom_point, factor = 0.0002), geom_point)) %>% 
+  #mutate(geom_point = ifelse(n() > 1, st_jitter(geom_point, factor = 0.0002), geom_point)) %>% 
   ungroup()
 
 rpad_geo_fix %>% 
@@ -196,8 +196,6 @@ rpad_geo_fix %>%
 
 # check that there are no duplicates
 rpad_geo_fix %>% 
-  as_tibble() %>% 
-  verify_isid(c("bbl", "year")) %>% 
   select(c("bbl", "year"), everything()) %>% 
   filter(year == 2021, cd == 315)
 ```
