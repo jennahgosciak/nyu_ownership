@@ -108,12 +108,16 @@ rpad_allyrs <- readRDS(path(out, "rpad_allyrs_pts.RDS")) %>%
   filter(!(str_trim(ownername) %in% c("YOON, SOOK NYU", "YOON, SUK NYU","NYU, SOON KEAT",
                             "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC",
-                            "REDUX NYU  LLC")))
+                            "REDUX NYU  LLC"))) %>% 
+  unique()
 
 rpad_allyrs %>% 
   tablist_qc(ownername)
 
-rpad_allyrs
+# checking uniqueness
+rpad_allyrs %>% 
+  as_tibble() %>% 
+  verify_isid(c("bbl", "year"))
 ```
 ```{r}
 rpad_geo <- rpad_allyrs %>% 
@@ -189,6 +193,13 @@ rpad_geo_fix %>%
   st_write(path(web_path, "rpad_geo.geojson"),
            append = F,
            dsn_delete = T)
+
+# check that there are no duplicates
+rpad_geo_fix %>% 
+  as_tibble() %>% 
+  verify_isid(c("bbl", "year")) %>% 
+  select(c("bbl", "year"), everything()) %>% 
+  filter(year == 2021, cd == 315)
 ```
 ## Loading background shapefiles for context maps
 ```{r}
@@ -223,6 +234,7 @@ Starts with general background statistics
 ```{r}
 # Identify list of community districts
 intersecting_cds <- nyu_pts %>% 
+  filter(year == 2021) %>% 
   st_join(cds, join = st_intersects) %>% 
   filter(!is.na(boro_cd)) %>% 
   pull(boro_cd) %>% 
@@ -322,32 +334,17 @@ nyu_21 %>%
   summarize(assesstot = sum(assesstot, na.rm = T))
 ```
 
-# Interactive map in leaflet
-* Experimental leaflet map
-```{r}
-nyu_leaflet <- st_transform(nyu_poly, 4263) %>% 
-  filter(year == 2021)
-map_interactive <- leaflet(nyu_leaflet) %>%
-  setView(lng = -73.9973, 
-          lat = 40.7309, zoom = 14) %>% 
-  addProviderTiles(provider = "CartoDB.DarkMatterNoLabels") %>% 
-  addPolygons(color= "#9057FF", stroke = F,
-              label = ~str_c(address, "\n", yearbuilt), fillOpacity = 1)
-map_interactive
-```
 
 Output all cds with nyu property in 2021
 
 ```{r}
-walk(intersecting_cds, ~expt_cd(cds, nyu_poly, ., 2021, spatial_path, fig_path, streets, parks))
+# walk(intersecting_cds, ~expt_cd(cds, nyu_poly, ., 2021, spatial_path, fig_path, streets, parks))
 ```
 
 Produce context map
 ```{r}
 nyu_21 %>%
   ggplot() +
-  geom_sf(data = streets,
-          color = "white", size = 0.01, alpha = 0.2, fill = NA) +
   geom_sf(data = parks,
             fill = "#777777", color = NA) +
   geom_sf(fill = "#9057FF", color = NA) +
@@ -803,7 +800,7 @@ ggsave(path(fig_path, "area_1.pdf"))
 ```
 
 # Repeat the above analyses with 
-# Analysis of number of buildings
+## Analysis of number of buildings
 ```{r}
 rpad_allyrs  %>% 
   verify_isid(c("bbl", "year")) %>% 
@@ -839,7 +836,7 @@ rpad_allyrs %>%
 ggsave(path(fig_path, "num_bld_time_rpad.pdf"))
 ```
 
-# Analysis of square footage (building or floor square footage)
+## Analysis of square footage (building or floor square footage)
 ```{r}
 nyu_area_rpad <- rpad_allyrs %>% 
   verify_isid(c("bbl", "year")) %>%

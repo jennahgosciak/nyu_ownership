@@ -109,7 +109,7 @@ clean_base_file <- function(df) {
 
 # function to clip and export by cd in 2021
 # programmatically exporting plots
-expt_cd <- function(cds, shp, cd_num, yr, path1, path2, streets, parks) {
+expt_cd <- function(cds, shp, cd_num, yr, path1, path2, parks) {
   cd_clip <- cds %>% 
     filter(boro_cd == cd_num)
   
@@ -133,10 +133,6 @@ expt_cd <- function(cds, shp, cd_num, yr, path1, path2, streets, parks) {
   shp %>% 
     filter(year == yr) %>% 
     ggplot() +
-    geom_sf(data = streets %>% 
-              st_crop(ext) %>% 
-              select(c("post_type")), 
-            color = "white", size = 0.5, fill = NA) +
     geom_sf(data = parks,
             fill = "#777777", color = NA) +
     geom_sf(fill = "#9057FF", color = NA) +

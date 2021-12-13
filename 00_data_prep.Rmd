@@ -78,15 +78,6 @@ tbl(con, "rpad_raw_with_pts") %>%
   filter(bbl == "1009367501") %>% 
   arrange(year4) %>% 
   select(c("owner"), everything())
-
-# seems like discrepancy of condo vs. unit
-# looks like nyu owns a condo, but this condo won't show up
-# in pluto bc NYU doesn't own the whole building
-rpad_final %>% 
-  filter(block == 936) %>% 
-  arrange(year) %>% 
-  select(c("ownername"), everything()) %>% 
-  select(c("bbl", "bbl_condo"))
 ```
 ```{r}
 rpad_allyrs_pts <- dbGetQuery(con, "SELECT * FROM rpad_raw_with_pts
@@ -114,23 +105,13 @@ rpad_allyrs_pts %>%
          bldgclass = bldgcl) %>% 
   saveRDS(path(out, "rpad_allyrs_pts.RDS"))
 
-tbl(con, "rpad__main_raw") %>% 
-  group_by(year) %>% 
-  summarize(n = n())
-
 tbls <- dbListTables(con)
-
 tbls[str_detect(tbls, "rpad")]
-
-tbl(con, "rpad_raw_old") %>% 
-  filter(year4 == 2017) %>% 
-  head(10)
 ```
 
 
-
-
 ## Load earlier RPAD Files
+* To append to PLUTO data
 ```{r}
 rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,
                       m.geom_point FROM rpad_raw_with_pts as r
