@@ -66,20 +66,6 @@ Also runs other data-intensive tasks from the Furman database
 * bbl_unit doesn't seem useful, doesn't appear in PLUTO
 * Extracting NYU ownership from all years of RPAD data (rpad_raw_with_pts)
 ```{r}
-tbl(con, "rpad_raw_with_pts") %>% 
-  filter(year4 == 1999) %>% 
-  left_join(tbl(con, "rpad_condo_xwalk"), by = "bbl_condo") %>% 
-  filter(bbl_condo != bbl_unit) %>% 
-  select(matches("bbl"))
-```
-```{r}
-## checking 330 east 30th street, seems incorrect
-tbl(con, "rpad_raw_with_pts") %>% 
-  filter(bbl == "1009367501") %>% 
-  arrange(year4) %>% 
-  select(c("owner"), everything())
-```
-```{r}
 rpad_allyrs_pts <- dbGetQuery(con, "SELECT * FROM rpad_raw_with_pts
                             WHERE owner ~* 
                           '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'")
