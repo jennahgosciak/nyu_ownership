@@ -220,23 +220,28 @@ rpad_geo_fix %>%
 ```{r}
 url_boro <- "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Borough_Boundary/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson"
 url_nhood <- "https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2020/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson"
-url_streets <- "https://data.cityofnewyork.us/resource/m6hn-ddkx.geojson?$limit=200000"
+#url_streets <- "https://data.cityofnewyork.us/resource/m6hn-ddkx.geojson?$limit=200000"
 url_roads <- "https://data.cityofnewyork.us/resource/gdww-crzy.geojson"
 url_cds <- "https://data.cityofnewyork.us/resource/jp9i-3b7y.geojson?$limit=200000"
 url_parks <- "https://data.cityofnewyork.us/resource/y6ja-fw4f.geojson?$limit=200000"
 # load boros
 boro <- st_read(url_boro) %>% 
   st_transform(2263)
+
 # load major streets
-streets <- st_read(url_streets) %>%
-  st_transform(2263)
-nrow(streets)
+# endpoint is not loading--temporarily commented out
+# streets <- st_read(url_streets) %>%
+#   st_transform(2263)
+# nrow(streets)
+
 # load cds
 cds <- st_read(url_cds)  %>% 
   st_transform(2263)
+
 # load parks
 parks <- st_read(url_parks) %>%
   st_transform(2263)
+
 # load nhood
 nhood <- st_read(url_nhood)  %>% 
   st_transform(2263)
