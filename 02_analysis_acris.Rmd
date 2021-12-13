@@ -1,5 +1,5 @@
 ---
-title: "acris_analysis_2021"
+title: "Analysis of ACRIS data"
 author: "Jennah Gosciak"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 knit: (function(inputFile, encoding) { 

@@ -38,8 +38,8 @@
 14. I used `st_jitter()` to move the points slightly (in the case that they might be directly on top of each other).
 	* I exported this as a geojson file for a second interactive map.
 
-## ACRIS Analysis
-1. I merged together the ACRIS parties file, the ACRIS master file, the ACRIS document control codes, and the ACRIS legals file. I also used the same regular expression to extract NYU properties.
+## [ACRIS Analysis](https://github.com/jennahgosciak/nyu_ownership/blob/main/02_analysis_acris.Rmd)
+1. With the [New York City Department of Finance Automated City Register Information System (ACRIS)](https://data.cityofnewyork.us/City-Government/ACRIS-Real-Property-Master/bnx9-e6tj), I merged together the parties file, the master file, the document control codes, and the ACRIS legals file. I also used the same regular expression as in previous steps to extract NYU properties.
 2. I then manually filtered out some names that were incorrectly extracted.
 3. I restricted the data to deed records, as I observed from seaching ACRIS records that deed records were more useful and clear.
 4. I extracted the year from the document date, and took the minimum of several dates (recorded_filing, modified_date, and doc_date) to fix missing values.
@@ -47,6 +47,19 @@
 6. Then I produced a graph of all deed records by year.
 
 ## Interactive Maps
-	* The interactive maps are located in [04_WebMap](https://github.com/jennahgosciak/nyu_ownership/tree/main/04_WebMap) and [04_WebMap_Condo](https://github.com/jennahgosciak/nyu_ownership/tree/main/04_WebMap)
-	* They were not written in R and are based on the html, javascript, and css files in the folders stored there.
-	* I didn't apply any transformations to the data in this process (i.e. everything analytic occurred in R)
+* The interactive maps are located in [04_WebMap](https://github.com/jennahgosciak/nyu_ownership/tree/main/04_WebMap) and [04_WebMap_Condo](https://github.com/jennahgosciak/nyu_ownership/tree/main/04_WebMap)
+* They were not written in R and are based on the html, javascript, and css files in the folders stored there.
+* I didn't apply any transformations to the data in this process (i.e. everything analytic occurred in R)
+
+## Data Sources
+* [New York City Department of Finance Real Property Assessment Data (RPAD)](https://www1.nyc.gov/site/finance/taxes/property-assessments.page)
+* [New York City Department of City Planning Primary Land Use Tax Output](https://www1.nyc.gov/site/planning/data-maps/open-data/dwn-pluto-mappluto.page)
+* [New York City Department of Finance Automated City Register Information System (ACRIS)](https://data.cityofnewyork.us/City-Government/ACRIS-Real-Property-Master/bnx9-e6tj)
+* [Boroughs](https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Borough_Boundary/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson)
+* [Neighborhoods](https://services5.arcgis.com/GfwWNkhOj9bNBqoJ/arcgis/rest/services/NYC_Neighborhood_Tabulation_Areas_2020/FeatureServer/0/query?where=1=1&outFields=*&outSR=4326&f=pgeojson)
+* [Streets](https://data.cityofnewyork.us/resource/m6hn-ddkx.geojson?$limit=200000)
+* [Roads](https://data.cityofnewyork.us/resource/gdww-crzy.geojson)
+* [Community districts](https://data.cityofnewyork.us/resource/jp9i-3b7y.geojson?$limit=200000)
+* [Parks](https://data.cityofnewyork.us/resource/y6ja-fw4f.geojson?$limit=200000)
+* [Bureau of Labor Statistics, Consumer Price Index, All Items, 1977-2020](https://www.bls.gov/cpi/research-series/r-cpi-u-rs-home.htm)
+* [Department of Finance, Property Tax Rates by Year](https://www1.nyc.gov/site/finance/taxes/property-tax-rates.page)

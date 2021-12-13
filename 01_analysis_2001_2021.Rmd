@@ -1,5 +1,5 @@
 ---
-title: "Exploratory analysis"
+title: "Analysis of RPAD and PLUTO Data"
 author: "Jennah Gosciak"
 date: "`r format(Sys.Date(), '%B %d, %Y')`"
 knit: (function(inputFile, encoding) { 
