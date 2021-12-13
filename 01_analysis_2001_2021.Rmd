@@ -619,7 +619,8 @@ fix_geom_filt
 ```{r}
 nyu_assess_fix <- nyu_assess_geo %>% 
   filter(!st_is_empty(geometry)) %>% 
-  bind_rows(fix_geom_filt)
+  bind_rows(fix_geom_filt) %>% 
+  unique() 
 
 nyu_assess_fix %>% 
   filter(st_is_empty(geometry)) %>% 
@@ -632,7 +633,9 @@ nyu_assess_fix %>%
   
 nyu_assess_fix %>% 
   # make sure not to include earlier years
-  filter(year >= 2001) %>% 
+  # new decision: only show after 2002
+  # there are some issues with condos showing up as the whole building
+  filter(year >= 2002) %>% 
   st_write(
     dsn = path(
       "04_WebMap",
