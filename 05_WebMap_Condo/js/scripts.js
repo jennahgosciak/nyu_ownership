@@ -55,12 +55,12 @@ map.on('load',function(){
   // add a new layer with your points
   map.addLayer({
     'id':'nyu',
-    'type': 'symbol',
+    'type': 'circle',
     'source':'nyu_data',
-    'layout': {},
     'paint': {
-      'circle-radius': 6,
-      'circle-color':  "#9057FF"
+      'circle-radius': 5,
+      'circle-color':  "#9057FF",
+      'circle-opacity': 0.5
     },
   })
 
