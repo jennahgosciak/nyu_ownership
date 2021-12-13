@@ -902,16 +902,16 @@ tbl(con, &quot;mappluto_21v3&quot;) %&gt;%
 ## #   [furmandata@fcdata.c7h93yqbqnvu.us-east-1.rds.amazonaws.com:5432/fcdata]
 ##    borough block   lot    cd ct2010  cb2010 schooldist council zipcode firecomp
 ##    &lt;chr&gt;   &lt;int&gt; &lt;int&gt; &lt;int&gt; &lt;chr&gt;   &lt;chr&gt;  &lt;chr&gt;        &lt;int&gt;   &lt;int&gt; &lt;chr&gt;   
-##  1 QN      15200     1     0 &lt;NA&gt;    &lt;NA&gt;   &lt;NA&gt;             0       0 &lt;NA&gt;    
-##  2 BK       8334    50   356 1028    1007   18              46   11234 L170    
-##  3 QN      16330    60   484 916.02  1009   27              32   11695 E329    
-##  4 QN      16350     2     0 &lt;NA&gt;    &lt;NA&gt;   &lt;NA&gt;             0       0 &lt;NA&gt;    
-##  5 QN      15100   474   484 1072.02 &lt;NA&gt;   27              48   11693 E266    
-##  6 BK       4587    12     0 &lt;NA&gt;    &lt;NA&gt;   &lt;NA&gt;             0       0 &lt;NA&gt;    
-##  7 BK       4452     2   356 1070    1005   19              42   11239 L107    
-##  8 BK       8590   700   356 666     1013   22              46   11234 E309    
-##  9 QN      15100   460   484 1072.02 &lt;NA&gt;   27              48   11693 E266    
-## 10 QN      15100   500   484 1072.02 &lt;NA&gt;   27              48   11693 E266    
+##  1 QN      16340     9   484 918     &lt;NA&gt;   27              32   11694 E329    
+##  2 QN      16350    81   484 916.01  1001   27              32   11695 E329    
+##  3 BK       8591    75   356 702.02  1000   22              46   11234 E323    
+##  4 BK       8590   800   356 702.02  1000   22              46   11234 E323    
+##  5 BK       8591  1500   356 702.02  &lt;NA&gt;   22              46   11234 E323    
+##  6 QN      15100   440   484 1072.02 &lt;NA&gt;   27              31   11693 E266    
+##  7 QN      15450    60     0 &lt;NA&gt;    &lt;NA&gt;   &lt;NA&gt;             0       0 &lt;NA&gt;    
+##  8 QN      16287   100     0 &lt;NA&gt;    &lt;NA&gt;   &lt;NA&gt;             0       0 &lt;NA&gt;    
+##  9 QN      16325   400     0 &lt;NA&gt;    &lt;NA&gt;   &lt;NA&gt;             0       0 &lt;NA&gt;    
+## 10 QN      16350    21   484 916.01  &lt;NA&gt;   27              32   11697 E329    
 ## # ... with more rows, and 84 more variables: policeprct &lt;int&gt;,
 ## #   healthcent &lt;int&gt;, healtharea &lt;int&gt;, sanitboro &lt;chr&gt;, sanitdistr &lt;chr&gt;,
 ## #   sanitsub &lt;chr&gt;, address &lt;chr&gt;, zonedist1 &lt;chr&gt;, zonedist2 &lt;chr&gt;,
@@ -1201,12 +1201,12 @@ geoms_geocoded</code></pre>
 ## 3  1009367501      FALSE   NEW YORK UNIVERSITY 2001             
 ## 4  1013937501      FALSE   NEW YORK UNIVERSITY 2001     $374,669
 ## 5  1005410001      FALSE NEW YORK UNIVERSITY S 2001   $6,047,173
-## 6  1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 6  1013730001      FALSE NEW YORK UNIVERSITY S 2001             
 ## 7  1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 8  1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 9  1009627501      FALSE  NYU HOSPITALS CENTER 2001             
-## 10 1006427502      FALSE NYU LAW SCHOOL FOUNDA 2001             
-## 11 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 10 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 11 1006427502      FALSE NYU LAW SCHOOL FOUNDA 2001             
 ## 12 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 13 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 14 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
@@ -1223,15 +1223,15 @@ geoms_geocoded</code></pre>
 ## 25 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 26 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 27 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
-## 28 1006207501      FALSE NEW YORK UNIVERSITY S 2001             
-## 29 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 28 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 29 1006207501      FALSE NEW YORK UNIVERSITY S 2001             
 ## 30 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 31 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 32 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 33 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 34 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
-## 35 1007907502      FALSE   NEW YORK UNIVERSITY 2001             
-## 36 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 35 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 36 1007907502      FALSE   NEW YORK UNIVERSITY 2001             
 ## 37 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 38 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 39 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
@@ -1250,22 +1250,23 @@ geoms_geocoded</code></pre>
 ## 52 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 53 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 54 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
-## 55 1006427502      FALSE NEW YORK UNIVERSITY L 2001             
-## 56 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 55 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 56 1006427502      FALSE NEW YORK UNIVERSITY L 2001             
 ## 57 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 58 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
+## 59 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ##    assessed_adj_orig lotarea floorarea resarea bldgarea lnd_area  cd
 ## 1         $1,753,058   41835     66636       0   66,636       NA 102
 ## 2         $1,823,621   41835        NA       0   66,636       NA 102
 ## 3                         NA        NA      NA                 0 106
 ## 4                         NA        NA      NA    3,236        0 108
 ## 5                         NA        NA      NA   66,636    41835 102
-## 6                         NA        NA      NA                 0 106
+## 6                         NA        NA      NA             87500 208
 ## 7                         NA        NA      NA                 0 106
 ## 8                         NA        NA      NA                 0 106
 ## 9                         NA        NA      NA                 0 106
-## 10                        NA        NA      NA                 0 102
-## 11                        NA        NA      NA                 0 106
+## 10                        NA        NA      NA                 0 106
+## 11                        NA        NA      NA                 0 102
 ## 12                        NA        NA      NA                 0 106
 ## 13                        NA        NA      NA                 0 106
 ## 14                        NA        NA      NA                 0 106
@@ -1282,15 +1283,15 @@ geoms_geocoded</code></pre>
 ## 25                        NA        NA      NA                 0 106
 ## 26                        NA        NA      NA                 0 106
 ## 27                        NA        NA      NA                 0 106
-## 28                        NA        NA      NA                 0 102
-## 29                        NA        NA      NA                 0 106
+## 28                        NA        NA      NA                 0 106
+## 29                        NA        NA      NA                 0 102
 ## 30                        NA        NA      NA                 0 106
 ## 31                        NA        NA      NA                 0 106
 ## 32                        NA        NA      NA                 0 106
 ## 33                        NA        NA      NA                 0 106
 ## 34                        NA        NA      NA                 0 106
-## 35                        NA        NA      NA                 0 104
-## 36                        NA        NA      NA                 0 106
+## 35                        NA        NA      NA                 0 106
+## 36                        NA        NA      NA                 0 104
 ## 37                        NA        NA      NA                 0 106
 ## 38                        NA        NA      NA                 0 106
 ## 39                        NA        NA      NA                 0 106
@@ -1309,69 +1310,71 @@ geoms_geocoded</code></pre>
 ## 52                        NA        NA      NA                 0 106
 ## 53                        NA        NA      NA                 0 106
 ## 54                        NA        NA      NA                 0 106
-## 55                        NA        NA      NA                 0 102
-## 56                        NA        NA      NA                 0 106
+## 55                        NA        NA      NA                 0 106
+## 56                        NA        NA      NA                 0 102
 ## 57                        NA        NA      NA                 0 106
 ## 58                        NA        NA      NA                 0 106
-##                                           address_form        bbl   borough
-## 1                               40 WASHINGTON SQUARE S 1005410001 Manhattan
-## 2                               40 WASHINGTON SQUARE S 1005410001 Manhattan
-## 3  330 East 33 street      , New York, New York, 10016 1009367501 Manhattan
-## 4    3 East 78 street      , New York, New York, 10021 1013937501 Manhattan
-## 5   40 Washington square s , New York, New York, 10012 1005410001 Manhattan
-## 6  433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 7  433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 8  433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 9  433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 10  99 Jane street         , New York, New York, 10014 1006427502 Manhattan
-## 11 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 12 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 13 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 14 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 15 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 16 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 17 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 18 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 19 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 20 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 21 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 22 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 23 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 24 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 25 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 26 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 27 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 28 534 Hudson street       , New York, New York, 10014 1006207501 Manhattan
-## 29 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 30 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 31 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 32 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 33 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 34 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 35 125 West 14 street      , New York, New York, 10011 1007907502 Manhattan
-## 36 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 37 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 38 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 39 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 40 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 41 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 42 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 43 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 44 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 45 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 46 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 47 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 48 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 49 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 50 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 51 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 52 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 53 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 54 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 55  99 Jane street         , New York, New York, 10014 1006427502 Manhattan
-## 56 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 57 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 58 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
+## 59                        NA        NA      NA                 0 106
+##                                         address_form        bbl   borough
+## 1                             40 WASHINGTON SQUARE S 1005410001 Manhattan
+## 2                             40 WASHINGTON SQUARE S 1005410001 Manhattan
+## 3      330 East 33 street, New York, New York, 10016 1009367501 Manhattan
+## 4        3 East 78 street, New York, New York, 10021 1013937501 Manhattan
+## 5  40 Washington square s, New York, New York, 10012 1005410001 Manhattan
+## 6          2 River Avenue, New York, New York, 10463 1013730001     Bronx
+## 7      433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 8      433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 9      433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 10     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 11         99 Jane street, New York, New York, 10014 1006427502 Manhattan
+## 12     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 13     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 14     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 15     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 16     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 17     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 18     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 19     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 20     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 21     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 22     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 23     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 24     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 25     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 26     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 27     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 28     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 29      534 Hudson street, New York, New York, 10014 1006207501 Manhattan
+## 30     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 31     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 32     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 33     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 34     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 35     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 36     125 West 14 street, New York, New York, 10011 1007907502 Manhattan
+## 37     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 38     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 39     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 40     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 41     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 42     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 43     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 44     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 45     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 46     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 47     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 48     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 49     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 50     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 51     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 52     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 53     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 54     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 55     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 56         99 Jane street, New York, New York, 10014 1006427502 Manhattan
+## 57     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 58     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 59     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
 ##       taxes_yr taxes_calc
 ## 1  $63,569,881   $170,257
 ## 2  $76,177,194   $210,774
@@ -1430,7 +1433,8 @@ geoms_geocoded</code></pre>
 ## 55                       
 ## 56                       
 ## 57                       
-## 58</code></pre>
+## 58                       
+## 59</code></pre>
 <pre class="r"><code>copy_to(con, geoms_geocoded,
   name = &quot;geoms_geocoded&quot;, overwrite = T,
   temporary = T
@@ -1447,17 +1451,17 @@ fix_geom %&gt;%
   equals(0) %&gt;% 
   stopifnot()
 fix_geom</code></pre>
-<pre><code>## Simple feature collection with 58 features and 17 fields
+<pre><code>## Simple feature collection with 59 features and 17 fields
 ## Active geometry column: geom1
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
-## Bounding box:  xmin: 981759.5 ymin: 205287.9 xmax: 994426 ymax: 222130.7
+## Bounding box:  xmin: 981759.5 ymin: 205287.9 xmax: 1000847 ymax: 222130.7
 ## Projected CRS: NAD83 / New York Long Island (ftUS)
 ## First 10 features:
 ##       bbl_geo no_results             ownername year assessed_adj
-## 1  1005410001      FALSE NEW YORK UNIVERSITY S 2002   $5,953,330
-## 2  1005410001      FALSE NEW YORK UNIVERSITYSC 2005   $7,418,626
-## 3  1005410001      FALSE NEW YORK UNIVERSITY S 2001   $6,047,173
+## 1  1005410001      FALSE NEW YORK UNIVERSITY S 2001   $6,047,173
+## 2  1005410001      FALSE NEW YORK UNIVERSITY S 2002   $5,953,330
+## 3  1005410001      FALSE NEW YORK UNIVERSITYSC 2005   $7,418,626
 ## 4  1006207501      FALSE NEW YORK UNIVERSITY S 2001             
 ## 5  1006427502      FALSE NYU LAW SCHOOL FOUNDA 2001             
 ## 6  1006427502      FALSE NEW YORK UNIVERSITY L 2001             
@@ -1466,9 +1470,9 @@ fix_geom</code></pre>
 ## 9  1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ## 10 1009627501      FALSE  NYU HOSPITALS CENTER 2001             
 ##    assessed_adj_orig lotarea floorarea resarea bldgarea lnd_area  cd
-## 1         $1,753,058   41835     66636       0   66,636       NA 102
-## 2         $1,823,621   41835        NA       0   66,636       NA 102
-## 3                         NA        NA      NA   66,636    41835 102
+## 1                         NA        NA      NA   66,636    41835 102
+## 2         $1,753,058   41835     66636       0   66,636       NA 102
+## 3         $1,823,621   41835        NA       0   66,636       NA 102
 ## 4                         NA        NA      NA                 0 102
 ## 5                         NA        NA      NA                 0 102
 ## 6                         NA        NA      NA                 0 102
@@ -1476,21 +1480,21 @@ fix_geom</code></pre>
 ## 8                         NA        NA      NA                 0 106
 ## 9                         NA        NA      NA                 0 106
 ## 10                        NA        NA      NA                 0 106
-##                                           address_form        bbl   borough
-## 1                               40 WASHINGTON SQUARE S 1005410001 Manhattan
-## 2                               40 WASHINGTON SQUARE S 1005410001 Manhattan
-## 3   40 Washington square s , New York, New York, 10012 1005410001 Manhattan
-## 4  534 Hudson street       , New York, New York, 10014 1006207501 Manhattan
-## 5   99 Jane street         , New York, New York, 10014 1006427502 Manhattan
-## 6   99 Jane street         , New York, New York, 10014 1006427502 Manhattan
-## 7  125 West 14 street      , New York, New York, 10011 1007907502 Manhattan
-## 8  330 East 33 street      , New York, New York, 10016 1009367501 Manhattan
-## 9  433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
-## 10 433 East 30 street      , New York, New York, 10016 1009627501 Manhattan
+##                                         address_form        bbl   borough
+## 1  40 Washington square s, New York, New York, 10012 1005410001 Manhattan
+## 2                             40 WASHINGTON SQUARE S 1005410001 Manhattan
+## 3                             40 WASHINGTON SQUARE S 1005410001 Manhattan
+## 4       534 Hudson street, New York, New York, 10014 1006207501 Manhattan
+## 5          99 Jane street, New York, New York, 10014 1006427502 Manhattan
+## 6          99 Jane street, New York, New York, 10014 1006427502 Manhattan
+## 7      125 West 14 street, New York, New York, 10011 1007907502 Manhattan
+## 8      330 East 33 street, New York, New York, 10016 1009367501 Manhattan
+## 9      433 East 30 street, New York, New York, 10016 1009627501 Manhattan
+## 10     433 East 30 street, New York, New York, 10016 1009627501 Manhattan
 ##       taxes_yr taxes_calc                          geom1
-## 1  $63,569,881   $170,257 MULTIPOLYGON (((984536.7 20...
-## 2  $76,177,194   $210,774 MULTIPOLYGON (((984536.7 20...
-## 3                         MULTIPOLYGON (((984536.7 20...
+## 1                         MULTIPOLYGON (((984536.7 20...
+## 2  $63,569,881   $170,257 MULTIPOLYGON (((984536.7 20...
+## 3  $76,177,194   $210,774 MULTIPOLYGON (((984536.7 20...
 ## 4                         MULTIPOLYGON (((982673.2 20...
 ## 5                         MULTIPOLYGON (((981971.7 20...
 ## 6                         MULTIPOLYGON (((981971.7 20...
@@ -1518,24 +1522,25 @@ fix_geom</code></pre>
   filter(row_number() == 1) %&gt;% 
   st_transform(4326)
 fix_geom_filt</code></pre>
-<pre><code>## Simple feature collection with 9 features and 17 fields
+<pre><code>## Simple feature collection with 10 features and 17 fields
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
-## Bounding box:  xmin: -74.00899 ymin: 40.73018 xmax: -73.96327 ymax: 40.77639
+## Bounding box:  xmin: -74.00899 ymin: 40.73018 xmax: -73.94008 ymax: 40.77639
 ## Geodetic CRS:  WGS 84
-## # A tibble: 9 x 18
-## # Groups:   bbl, year [9]
-##   bbl_geo    no_results ownername     year assessed_adj assessed_adj_or~ lotarea
-## * &lt;chr&gt;      &lt;lgl&gt;      &lt;chr&gt;        &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;              &lt;dbl&gt;
-## 1 1005410001 FALSE      NEW YORK UN~  2002 &quot;$5,953,330&quot; &quot;$1,753,058&quot;       41835
-## 2 1005410001 FALSE      NEW YORK UN~  2005 &quot;$7,418,626&quot; &quot;$1,823,621&quot;       41835
-## 3 1005410001 FALSE      NEW YORK UN~  2001 &quot;$6,047,173&quot; &quot;&quot;                    NA
-## 4 1006207501 FALSE      NEW YORK UN~  2001 &quot;&quot;           &quot;&quot;                    NA
-## 5 1006427502 FALSE      NYU LAW SCH~  2001 &quot;&quot;           &quot;&quot;                    NA
-## 6 1007907502 FALSE      NEW YORK UN~  2001 &quot;&quot;           &quot;&quot;                    NA
-## 7 1009367501 FALSE      NEW YORK UN~  2001 &quot;&quot;           &quot;&quot;                    NA
-## 8 1009627501 FALSE      NYU HOSPITA~  2001 &quot;&quot;           &quot;&quot;                    NA
-## 9 1013937501 FALSE      NEW YORK UN~  2001 &quot;$374,669&quot;   &quot;&quot;                    NA
+## # A tibble: 10 x 18
+## # Groups:   bbl, year [10]
+##    bbl_geo    no_results ownername    year assessed_adj assessed_adj_or~ lotarea
+##  * &lt;chr&gt;      &lt;lgl&gt;      &lt;chr&gt;       &lt;dbl&gt; &lt;chr&gt;        &lt;chr&gt;              &lt;dbl&gt;
+##  1 1005410001 FALSE      NEW YORK U~  2001 &quot;$6,047,173&quot; &quot;&quot;                    NA
+##  2 1005410001 FALSE      NEW YORK U~  2002 &quot;$5,953,330&quot; &quot;$1,753,058&quot;       41835
+##  3 1005410001 FALSE      NEW YORK U~  2005 &quot;$7,418,626&quot; &quot;$1,823,621&quot;       41835
+##  4 1006207501 FALSE      NEW YORK U~  2001 &quot;&quot;           &quot;&quot;                    NA
+##  5 1006427502 FALSE      NYU LAW SC~  2001 &quot;&quot;           &quot;&quot;                    NA
+##  6 1007907502 FALSE      NEW YORK U~  2001 &quot;&quot;           &quot;&quot;                    NA
+##  7 1009367501 FALSE      NEW YORK U~  2001 &quot;&quot;           &quot;&quot;                    NA
+##  8 1009627501 FALSE      NYU HOSPIT~  2001 &quot;&quot;           &quot;&quot;                    NA
+##  9 1013730001 FALSE      NEW YORK U~  2001 &quot;&quot;           &quot;&quot;                    NA
+## 10 1013937501 FALSE      NEW YORK U~  2001 &quot;$374,669&quot;   &quot;&quot;                    NA
 ## # ... with 11 more variables: floorarea &lt;dbl&gt;, resarea &lt;dbl&gt;, bldgarea &lt;chr&gt;,
 ## #   lnd_area &lt;dbl&gt;, cd &lt;dbl&gt;, address_form &lt;chr&gt;, bbl &lt;chr&gt;, borough &lt;chr&gt;,
 ## #   taxes_yr &lt;chr&gt;, taxes_calc &lt;chr&gt;, geometry &lt;MULTIPOLYGON [°]&gt;</code></pre>
@@ -1556,7 +1561,7 @@ nyu_assess_fix %&gt;%
 ## -------------------------------------------------------
 ##  year   _freq              geometry              _perc 
 ## ------ ------- -------------------------------- -------
-##  2001    114    MULTIPOLYGON (((-73.99 40.7...    5.2  
+##  2001    115    MULTIPOLYGON (((-73.99 40.7...    5.2  
 ## 
 ##  2002    107    MULTIPOLYGON (((-73.92 40.8...    4.9  
 ## 
