@@ -150,12 +150,40 @@ copy_to(con, rpad_geo,
 rpad_geo_merge <- st_read(con, query = "SELECT r.*, m.geom_point FROM rpad_geo as r
                           LEFT JOIN mappluto_21v3 as m on r.bbl_geo = m.bbl") %>% 
   as_tibble()
-rpad_geo_merge
-
 rpad_geo_merge %>% 
-  rename(address_form = input_location) %>%
-  mutate(geom_point = st_jitter(geom_point, factor = 0.002)) %>%
+  filter(st_is_empty(geometry)) %>% 
+  as_tibble()
+
+# replace missing values
+# manually for one address
+replace_address <- tibble(address_form = c("158 East 34 street, New York, New York, 10016",
+                                      "156 East 34 street, New York, New York, 10016"),
+                 lat = c(-73.97900442578594, -73.97900442578594),
+                 lon = c(40.74592051070297, 40.74592051070297)) %>% 
+  st_as_sf(coords = c("lon", "lat")) %>% 
+  as_tibble() %>% 
+  rename(geom_new = geometry) %>% 
+  mutate(geom_new = st_sfc(geom_new))
+
+replace_address
+
+rpad_geo_fix <- rpad_geo_merge %>%
   st_transform(4326) %>% 
+  # rename(address_form = input_location) %>%
+  # mutate(geom_point = st_jitter(geom_point, factor = 0.002)) %>% 
+  as_tibble() %>% 
+  left_join(replace_address, by = "address_form") %>% 
+  mutate(geometry = ifelse(st_is_empty(geometry), geom_new, geometry)) %>% 
+  select(-"geom_new") %>% 
+  st_set_geometry("geometry")
+
+rpad_geo_fix %>% 
+  filter(st_is_empty(geometry)) %>% 
+  nrow() %>% 
+  equals(0) %>% 
+  stopifnot()
+
+rpad_geo_fix %>% 
   st_write(path(web_path, "rpad_geo.geojson"),
            append = F,
            dsn_delete = T)
