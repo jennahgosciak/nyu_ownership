@@ -178,9 +178,9 @@ rpad_geo_fix <- rpad_geo_merge %>%
   mutate(geom_point = ifelse(st_is_empty(geom_point), geom_new, geom_point)) %>% 
   select(-"geom_new") %>% 
   st_set_geometry("geom_point") %>% 
-  group_by(bbl_condo) %>% 
-  # if more than one per buildings etc.
-  #mutate(geom_point = ifelse(n() > 1, st_jitter(geom_point, factor = 0.0002), geom_point)) %>% 
+  group_by(bbl_condo, year) %>% 
+  #if more than one per buildings etc.
+  mutate(geom_point = ifelse(n() > 1, st_jitter(geom_point, factor = 0.0002), geom_point)) %>%
   ungroup()
 
 rpad_geo_fix %>% 
@@ -194,10 +194,27 @@ rpad_geo_fix %>%
            append = F,
            dsn_delete = T)
 
+rpad_geo_fix %>% 
+  filter(year == 2021) %>% 
+  st_write(path(web_path, "rpad_geo_21.geojson"),
+           append = F,
+           dsn_delete = T)
+
 # check that there are no duplicates
+# random example I had found in the map data
+rpad_geo_fix %>%
+  as_tibble() %>% 
+  verify_isid(c("bbl", "year"))
+
 rpad_geo_fix %>% 
   select(c("bbl", "year"), everything()) %>% 
   filter(year == 2021, cd == 315)
+
+rpad_geo_fix %>% 
+  select(c("bbl", "year"), everything()) %>% 
+  filter(year == 2021, cd == 315) %>% 
+  ggplot() + 
+  geom_sf()
 ```
 ## Loading background shapefiles for context maps
 ```{r}

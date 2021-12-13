@@ -85,7 +85,7 @@ map.on('click', 'nyu', function(e) {
 
   // and create a popup on the map
   new maplibregl.Popup()
-  .setLngLat(e.lngLat)
+  .setLngLat(coordinates)
   .setHTML(`<table>
               <tr>
               <td>Owner</td>
