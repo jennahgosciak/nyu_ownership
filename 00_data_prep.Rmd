@@ -66,7 +66,7 @@ Also runs other data-intensive tasks from the Furman database
 * bbl_unit doesn't seem useful, doesn't appear in PLUTO
 * Extracting NYU ownership from all years of RPAD data (rpad_raw_with_pts)
 ```{r}
-tbl(con, "rpad_raw") %>% 
+tbl(con, "rpad_raw_with_pts") %>% 
   filter(year4 == 1999) %>% 
   left_join(tbl(con, "rpad_condo_xwalk"), by = "bbl_condo") %>% 
   filter(bbl_condo != bbl_unit) %>% 
@@ -74,7 +74,7 @@ tbl(con, "rpad_raw") %>%
 ```
 ```{r}
 ## checking 330 east 30th street, seems incorrect
-tbl(con, "rpad_raw") %>% 
+tbl(con, "rpad_raw_with_pts") %>% 
   filter(bbl == "1009367501") %>% 
   arrange(year4) %>% 
   select(c("owner"), everything())
@@ -89,29 +89,7 @@ rpad_final %>%
   select(c("bbl", "bbl_condo"))
 ```
 ```{r}
-rpad_allyrs <- dbGetQuery(con, "SELECT * FROM rpad_raw
-                            WHERE owner ~* 
-                          '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'")
-rpad_allyrs %>% 
-  arrange(year4) %>% 
-  tablist_qc(year4)
-
-rpad_allyrs %>% 
-  select(c("bble", "bbl", "bbl_condo",  "cd_rpad",
-            "cd", "bldgcl", "exmtcl",
-           "owner", "hnum_lo", "hnum_hi", "str_name",
-           "zip", "tot_unit", "res_unit", "bldgs",
-           "lnd_area", "gr_sqft", "zoning", "yrb", "year4",
-           "owner", "geom_poly", "geom_point",
-           "hnum_lo", "hnum_hi", "str_name", "zip")) %>% 
-  rename(bldgarea = gr_sqft,
-         year = year4,
-         ownername = owner,
-         bldgclass = bldgcl) %>% 
-  writeRDS(path(out, "rpad_allyrs.RDS"))
-```
-```{r}
-rpad_allyrs_pts <- st_read(con, query = "SELECT * FROM rpad_raw_with_pts
+rpad_allyrs_pts <- dbGetQuery(con, "SELECT * FROM rpad_raw_with_pts
                             WHERE owner ~* 
                           '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)'")
 
@@ -119,20 +97,21 @@ rpad_allyrs_pts %>%
   arrange(year4) %>% 
   tablist_qc(year4)
 
+rpad_allyrs_pts
+
 rpad_allyrs_pts %>% 
   select(c("bble", "bbl", "bbl_condo",  "cd_rpad",
             "cd", "bldgcl", "exmtcl",
            "owner", "hnum_lo", "hnum_hi", "str_name",
            "zip", "tot_unit", "res_unit", "bldgs",
            "lnd_area", "gr_sqft", "zoning", "yrb", "year4",
-           "owner", "geom_poly", "geom_point",
+           "owner",
            "hnum_lo", "hnum_hi", "str_name", "zip")) %>% 
   rename(bldgarea = gr_sqft,
          year = year4,
          ownername = owner,
          bldgclass = bldgcl) %>% 
-  st_write(rpad_allyrs_pts,
-           dsn = path(out, "rpad_allyrs_pts.geojson"))
+  saveRDS(path(out, "rpad_allyrs_pts.RDS"))
 ```
 
 
@@ -141,7 +120,7 @@ rpad_allyrs_pts %>%
 ## Load earlier RPAD Files
 ```{r}
 rpad_lt2002 <- st_read(con, query = "SELECT r.*, m.geom_poly,
-                      m.geom_point FROM rpad_raw as r
+                      m.geom_point FROM rpad_raw_with_pts as r
                       LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
                       WHERE r.year4 < 2002 AND
                       r.owner ~* 
@@ -224,7 +203,7 @@ copy_to(con, unmerged_rpad,
   temporary = T
 )
 
-rpad_check <- st_read(con, query = "SELECT r.*, m.geom_poly FROM rpad_raw as r
+rpad_check <- st_read(con, query = "SELECT r.*, m.geom_poly FROM rpad_raw_with_pts as r
                       INNER JOIN unmerged_rpad as unmgd on coalesce(r.bbl, r.bble, r.bbl_condo) = unmgd.bbl
                       LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
                       WHERE r.year4 < 2002 and r.year4 > 1996")

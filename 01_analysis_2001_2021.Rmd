@@ -105,10 +105,20 @@ nyu_21 <- st_read(path(out, "nyu_21.geojson")) %>%
   filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
                             "ARA HOLDINGS OF NYU LLC")))
 
-rpad_allyrs <- st_read(path(out, "rpad_allyrs_pts.geojson")) %>% 
-  filter(!(ownername %in% c("YOON, SOOK NYU", "YOON, SUK NYU", "ARA HOLDINGS OF NYU L",
-                            "ARA HOLDINGS OF NYU LLC"))) %>% 
-  clean_base_file()
+rpad_allyrs <- readRDS(path(out, "rpad_allyrs_pts.RDS")) %>% 
+  filter(!(str_trim(ownername) %in% c("YOON, SOOK NYU", "YOON, SUK NYU","NYU, SOON KEAT",
+                            "ARA HOLDINGS OF NYU L",
+                            "ARA HOLDINGS OF NYU LLC",
+                            "REDUX NYU  LLC")))
+
+rpad_allyrs %>% 
+  tablist_qc(ownername)
+
+rpad_allyrs
+
+tbl(con, "rpad_raw_with_pts") %>% 
+  filter(year4 == 2021) %>% 
+  head(10)
 ```
 ## Loading background shapefiles for context maps
 ```{r}
