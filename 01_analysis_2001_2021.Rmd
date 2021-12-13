@@ -153,8 +153,9 @@ rpad_geo_merge <- st_read(con, query = "SELECT r.*, m.geom_point FROM rpad_geo a
 rpad_geo_merge
 
 rpad_geo_merge %>% 
-  rename(address_form = input_location) %>% 
-  mutate(geom_point = st_jitter(geom_point, factor = 0.002)) %>% 
+  rename(address_form = input_location) %>%
+  mutate(geom_point = st_jitter(geom_point, factor = 0.002)) %>%
+  st_transform(4326) %>% 
   st_write(path(web_path, "rpad_geo.geojson"),
            append = F,
            dsn_delete = T)
