@@ -55,7 +55,7 @@ con <- dbConnect(Postgres(),
 source("99_common.R")
 out <- "03_Output"
 inp <- "01_Input"
-figs <- path(out, "figs")
+fig_path <- path(out, "figs")
 
 colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
 ```
@@ -75,7 +75,6 @@ nyu_acris <- dbGetQuery(con, paste0("SELECT p.*, m.*, l.property_type,
                   AND p.name NOT IN ('NYU, SOON KEAT',
                                   'OK NYU PARK, AS ADMINISTRATOR OF ESTATE',
                                   'YOON, SOOK NYU CHUNG')"))
-nyu_acris
 
 nyu_acris_filt <- nyu_acris %>%
   filter(doc_type != "EASE") %>% 
@@ -117,7 +116,8 @@ nyu_acris_filt %>%
   unique() %>% 
   group_by(doc_date) %>% 
   mutate(count = n()) %>% 
-  arrange(-count)
+  arrange(-count) %>% 
+  head(10)
 
 # create summary table
 nyu_acris_filt %>% 
@@ -131,7 +131,8 @@ nyu_acris_filt %>%
   mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
   group_by(doc_year, sale_type) %>% 
   summarize(count = n()) %>% 
-  arrange(-count)
+  arrange(-count) %>% 
+  head(10)
 
 # number of deeds, split by selling vs. buying
 nyu_acris_filt %>% 
@@ -161,6 +162,7 @@ nyu_acris_filt %>%
 
 ggsave(path(fig_path, "sale_property.pdf"))
 
+# more exploratory/investigative work
 nyu_acris_filt %>% 
   filter(doc_type == "DEED") %>% 
   verify(party_type %in% c(1, 2)) %>% 
@@ -181,7 +183,8 @@ nyu_acris_filt %>%
 nyu_acris_filt %>% 
   filter(doc_type == "DEED") %>% 
   verify(party_type %in% c(1, 2)) %>% 
-  filter(is.na(doc_date))
+  filter(is.na(doc_date)) %>% 
+  head(10)
 ```
 
 ```{r}
@@ -210,9 +213,5 @@ nyu_acris_geo %>%
   unique() %>% 
   filter(!st_is_empty(geom2)) %>% 
   nrow()
-
-nyu_acris_geo %>% 
-  st_set_geometry("geom2") %>% 
-  filter(st_is_empty(geom2))
 ```
 
