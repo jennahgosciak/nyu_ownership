@@ -194,88 +194,101 @@ pre code {
 <li>bbl_unit doesn’t seem useful, doesn’t appear in PLUTO</li>
 <li>Extracting NYU ownership from all years of RPAD data (rpad_raw_with_pts)</li>
 </ul>
-<pre class="r"><code>rpad_allyrs_pts &lt;- dbGetQuery(con, &quot;SELECT * FROM rpad_raw_with_pts
-                            WHERE owner ~*
-                          &#39;^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)&#39;&quot;)
+<pre class="r"><code># need to add bbl because it drop out in one year
+rpad_allyrs_pts &lt;- dbGetQuery(con, &quot;SELECT * FROM rpad_raw_with_pts
+                            WHERE owner ~* 
+                          &#39;^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)&#39; OR bbl = &#39;1005330001&#39;&quot;)
 
-rpad_allyrs_pts %&gt;%
-  arrange(year4) %&gt;%
+rpad_allyrs_pts %&gt;% 
+  arrange(year4) %&gt;% 
   tablist_qc(year4)</code></pre>
-<pre><code>##
+<pre><code>## 
 ## -----------------------
-##  year4   _freq   _perc
+##  year4   _freq   _perc 
 ## ------- ------- -------
-##  1997     55      1.2
-##
-##  1998     94      2.1
-##
-##  2001     164     3.7
-##
-##  2002     165     3.7
-##
-##  2003     163     3.6
-##
-##  2004     159     3.6
-##
-##  2005     158     3.5
-##
-##  2006     160     3.6
-##
-##  2007     205     4.6
-##
-##  2008     201     4.5
-##
-##  2009     206     4.6
-##
-##  2010     211     4.7
-##
-##  2011     228     5.1
-##
-##  2012     222      5
-##
-##  2013     227     5.1
-##
-##  2014     224      5
-##
-##  2015     229     5.1
-##
-##  2016     233     5.2
-##
-##  2017     229     5.1
-##
-##  2018     232     5.2
-##
-##  2019     231     5.2
-##
-##  2020     241     5.4
-##
-##  2021     241     5.4
+##  1993      1       0   
+## 
+##  1994      1       0   
+## 
+##  1995      1       0   
+## 
+##  1996      1       0   
+## 
+##  1997     56      1.2  
+## 
+##  1998     94      2.1  
+## 
+##  1999      1       0   
+## 
+##  2000      1       0   
+## 
+##  2001     164     3.7  
+## 
+##  2002     165     3.7  
+## 
+##  2003     163     3.6  
+## 
+##  2004     160     3.6  
+## 
+##  2005     159     3.5  
+## 
+##  2006     161     3.6  
+## 
+##  2007     205     4.6  
+## 
+##  2008     201     4.5  
+## 
+##  2009     206     4.6  
+## 
+##  2010     211     4.7  
+## 
+##  2011     228     5.1  
+## 
+##  2012     222     4.9  
+## 
+##  2013     227     5.1  
+## 
+##  2014     224      5   
+## 
+##  2015     229     5.1  
+## 
+##  2016     233     5.2  
+## 
+##  2017     229     5.1  
+## 
+##  2018     232     5.2  
+## 
+##  2019     231     5.1  
+## 
+##  2020     241     5.4  
+## 
+##  2021     241     5.4  
 ## -----------------------</code></pre>
-<pre class="r"><code>rpad_allyrs_pts %&gt;%
+<pre class="r"><code>rpad_allyrs_pts %&gt;% 
   select(matches(&quot;PYMK&quot;))</code></pre>
-<pre><code>## data frame with 0 columns and 4478 rows</code></pre>
-<pre class="r"><code>rpad_allyrs_pts %&gt;%
+<pre><code>## data frame with 0 columns and 4488 rows</code></pre>
+<pre class="r"><code>rpad_allyrs_pts %&gt;% 
   select(c(&quot;bble&quot;, &quot;bbl&quot;, &quot;bbl_condo&quot;,  &quot;cd_rpad&quot;,
             &quot;cd&quot;, &quot;bldgcl&quot;, &quot;exmtcl&quot;,
            &quot;owner&quot;, &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;,
            &quot;zip&quot;, &quot;tot_unit&quot;, &quot;res_unit&quot;, &quot;bldgs&quot;,
            &quot;lnd_area&quot;, &quot;gr_sqft&quot;, &quot;zoning&quot;, &quot;yrb&quot;, &quot;year4&quot;,
            &quot;owner&quot;,
-           &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;, &quot;zip&quot;)) %&gt;%
+           &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;, &quot;zip&quot;)) %&gt;% 
   rename(bldgarea = gr_sqft,
          year = year4,
          ownername = owner,
-         bldgclass = bldgcl) %&gt;%
+         bldgclass = bldgcl) %&gt;% 
   saveRDS(path(out, &quot;rpad_allyrs_pts.RDS&quot;))
 
 tbls &lt;- dbListTables(con)
 tbls[str_detect(tbls, &quot;rpad&quot;)]</code></pre>
-<pre><code>##  [1] &quot;rpad_condo_xwalk&quot;                    &quot;rpad_condo_main&quot;
-##  [3] &quot;lps_rpad&quot;                            &quot;rpad_raw_old&quot;
-##  [5] &quot;rpad_bldg&quot;                           &quot;rpad_bldg_agg&quot;
-##  [7] &quot;rpad_raw&quot;                            &quot;rpad_pts_pri_rental_units_soc&quot;
-##  [9] &quot;rpad_condo_xwalk_with_pts&quot;           &quot;rpad_condo_main_with_pts&quot;
-## [11] &quot;rpad_raw_with_pts&quot;                   &quot;rpad_raw_staging_test&quot;
+<pre><code>##  [1] &quot;rpad_condo_xwalk&quot;                    &quot;rpad_condo_main&quot;                    
+##  [3] &quot;lps_rpad&quot;                            &quot;rpad_raw_old&quot;                       
+##  [5] &quot;rpad_bldg&quot;                           &quot;rpad_bldg_agg&quot;                      
+##  [7] &quot;rpad_raw&quot;                            &quot;rpad_pts_pri_rental_units_soc&quot;      
+##  [9] &quot;rpad_condo_xwalk_with_pts&quot;           &quot;rpad_condo_main_with_pts&quot;           
+## [11] &quot;rpad_raw_with_pts&quot;                   &quot;rpad_raw_staging_test&quot;              
 ## [13] &quot;rpad_pts_pri_rental_units&quot;           &quot;acris_derived_master_lot_pairs_rpad&quot;
 ## [15] &quot;rpad_bldg_with_pts&quot;</code></pre>
 </div>
@@ -288,52 +301,52 @@ tbls[str_detect(tbls, &quot;rpad&quot;)]</code></pre>
                       m.geom_point FROM rpad_raw_with_pts as r
                       LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
                       WHERE r.year4 &lt; 2002 AND
-                      r.owner ~*
+                      r.owner ~* 
                     &#39;^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)&#39;&quot;)</code></pre>
 <pre class="r"><code># select only relevant vars
-rpad_filt &lt;- rpad_lt2002 %&gt;%
+rpad_filt &lt;- rpad_lt2002 %&gt;% 
   select(c(&quot;bble&quot;, &quot;bbl&quot;, &quot;bbl_condo&quot;,  &quot;cd_rpad&quot;,
             &quot;cd&quot;, &quot;bldgcl&quot;, &quot;exmtcl&quot;,
            &quot;owner&quot;, &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;,
            &quot;zip&quot;, &quot;tot_unit&quot;, &quot;res_unit&quot;, &quot;bldgs&quot;,
            &quot;lnd_area&quot;, &quot;gr_sqft&quot;, &quot;zoning&quot;, &quot;yrb&quot;, &quot;year4&quot;,
            &quot;owner&quot;, &quot;geom_poly&quot;, &quot;geom_point&quot;,
-           &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;, &quot;zip&quot;)) %&gt;%
+           &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;, &quot;zip&quot;)) %&gt;% 
   rename(bldgarea = gr_sqft,
          year = year4,
          ownername = owner,
-         bldgclass = bldgcl)
+         bldgclass = bldgcl) 
 
-rpad_lt2002 %&gt;%
-  st_set_geometry(&quot;geom_poly&quot;) %&gt;%
-  st_transform(2263) %&gt;%
-  select(-&quot;geom_point&quot;) %&gt;%
+rpad_lt2002 %&gt;% 
+  st_set_geometry(&quot;geom_poly&quot;) %&gt;% 
+  st_transform(2263) %&gt;% 
+  select(-&quot;geom_point&quot;) %&gt;% 
   st_write(dsn = path(out, &quot;rpad_nyu.geojson&quot;), driver = &quot;GeoJSON&quot;,
            append = F,
            delete_dsn = T)</code></pre>
 <pre><code>## Deleting source `03_Output/rpad_nyu.geojson&#39; using driver `GeoJSON&#39;
-## Writing layer `rpad_nyu&#39; to data source
+## Writing layer `rpad_nyu&#39; to data source 
 ##   `03_Output/rpad_nyu.geojson&#39; using driver `GeoJSON&#39;
 ## Writing 319 features with 132 fields and geometry type Unknown (any).</code></pre>
 <ul>
 <li>Investigating unmerged cases</li>
 </ul>
-<pre class="r"><code>nyu_pluto &lt;- st_read(path(out, &quot;nyu_allyrs.geojson&quot;)) %&gt;%
-  filter(year &gt; 2001) %&gt;%
+<pre class="r"><code>nyu_pluto &lt;- st_read(path(out, &quot;nyu_allyrs.geojson&quot;)) %&gt;% 
+  filter(year &gt; 2001) %&gt;% 
   as_tibble()</code></pre>
-<pre><code>## Reading layer `nyu_allyrs&#39; from data source
-##   `C:\Users\jg6849\Documents\Github\nyu_ownership\03_Output\nyu_allyrs.geojson&#39;
+<pre><code>## Reading layer `nyu_allyrs&#39; from data source 
+##   `C:\Users\jg6849\Documents\Github\nyu_ownership\03_Output\nyu_allyrs.geojson&#39; 
 ##   using driver `GeoJSON&#39;
-## Simple feature collection with 2455 features and 37 fields (with 75 geometries empty)
+## Simple feature collection with 2449 features and 37 fields (with 75 geometries empty)
 ## Geometry type: GEOMETRY
 ## Dimension:     XY
-## Bounding box:  xmin: 934492.1 ymin: 136396.6 xmax: 1044309 ymax: 262101.5
+## Bounding box:  xmin: 934492.1 ymin: 136396.6 xmax: 1006794 ymax: 262101.5
 ## Projected CRS: NAD83 / New York Long Island (ftUS)</code></pre>
-<pre class="r"><code>unmerged_rpad &lt;- rpad_lt2002 %&gt;%
-  as_tibble() %&gt;%
-  anti_join(nyu_pluto, ., by = &quot;bbl&quot;) %&gt;%
-  select(c(&quot;bbl&quot;, &quot;address&quot;, &quot;ownername&quot;, &quot;yearbuilt&quot;)) %&gt;%
-  filter(yearbuilt &lt; 2002) %&gt;%
+<pre class="r"><code>unmerged_rpad &lt;- rpad_lt2002 %&gt;% 
+  as_tibble() %&gt;% 
+  anti_join(nyu_pluto, ., by = &quot;bbl&quot;) %&gt;% 
+  select(c(&quot;bbl&quot;, &quot;address&quot;, &quot;ownername&quot;, &quot;yearbuilt&quot;)) %&gt;% 
+  filter(yearbuilt &lt; 2002) %&gt;% 
   unique()
 unmerged_rpad</code></pre>
 <pre><code>## # A tibble: 37 x 4
@@ -377,13 +390,13 @@ unmerged_rpad</code></pre>
 # 467 3rd avenue
 # bought in 1984
 
-nyu_pluto %&gt;%
-  filter(cd == 208) %&gt;%
-  select(c(&quot;ownername&quot;, &quot;address&quot;, &quot;year&quot;, &quot;yearbuilt&quot;, &quot;bbl&quot;)) %&gt;%
+nyu_pluto %&gt;% 
+  filter(cd == 208) %&gt;% 
+  select(c(&quot;ownername&quot;, &quot;address&quot;, &quot;year&quot;, &quot;yearbuilt&quot;, &quot;bbl&quot;)) %&gt;% 
   arrange(year)</code></pre>
 <pre><code>## # A tibble: 20 x 5
-##    ownername                                    address    year yearbuilt bbl
-##    &lt;chr&gt;                                        &lt;chr&gt;     &lt;dbl&gt;     &lt;int&gt; &lt;chr&gt;
+##    ownername                                    address    year yearbuilt bbl   
+##    &lt;chr&gt;                                        &lt;chr&gt;     &lt;dbl&gt;     &lt;int&gt; &lt;chr&gt; 
 ##  1 NEW YORK UNIVERSITY S                        2 RIVER ~  2003      1905 20575~
 ##  2 NEW YORK UNIVERSITY S                        2 RIVER ~  2004      1905 20575~
 ##  3 NEW YORK UNIVERSITYSC                        RIVER RO~  2005         0 20575~
@@ -413,7 +426,7 @@ rpad_check &lt;- st_read(con, query = &quot;SELECT r.*, m.geom_poly FROM rpad_ra
                       INNER JOIN unmerged_rpad as unmgd on coalesce(r.bbl, r.bble, r.bbl_condo) = unmgd.bbl
                       LEFT JOIN mappluto_02b as m on coalesce(r.bbl, r.bble, r.bbl_condo) = m.bbl
                       WHERE r.year4 &lt; 2002 and r.year4 &gt; 1996&quot;)
-rpad_check %&gt;%
+rpad_check %&gt;% 
   select(c(&quot;owner&quot;, &quot;bbl&quot;, &quot;str_name&quot;))</code></pre>
 <pre><code>## Simple feature collection with 147 features and 3 fields
 ## Geometry type: MULTIPOLYGON
@@ -422,16 +435,16 @@ rpad_check %&gt;%
 ## Projected CRS: NAD83 / New York Long Island (ftUS)
 ## First 10 features:
 ##                owner        bbl                       str_name
-## 1               &lt;NA&gt; 1009270038 EAST 22 STREET
-## 2          AVON BARD 1009270038 EAST 22 STREET
-## 3  AVON BARD COMPANY 1009270038 EAST 22 STREET
-## 4               &lt;NA&gt; 1009270038 EAST 22 STREET
-## 5               &lt;NA&gt; 1009270038 EAST 22 STREET
-## 6               &lt;NA&gt; 1005310020 LAFAYETTE STREET
-## 7               &lt;NA&gt; 1005310020 LAFAYETTE STREET
-## 8               &lt;NA&gt; 3008370017 56 STREET
-## 9               &lt;NA&gt; 3067760018 EAST 14 STREET
-## 10              &lt;NA&gt; 3008370017 56 STREET
+## 1               &lt;NA&gt; 1009270038 EAST 22 STREET                
+## 2          AVON BARD 1009270038 EAST 22 STREET                
+## 3  AVON BARD COMPANY 1009270038 EAST 22 STREET                
+## 4               &lt;NA&gt; 1009270038 EAST 22 STREET                
+## 5               &lt;NA&gt; 1009270038 EAST 22 STREET                
+## 6               &lt;NA&gt; 1005310020 LAFAYETTE STREET              
+## 7               &lt;NA&gt; 1005310020 LAFAYETTE STREET              
+## 8               &lt;NA&gt; 3008370017 56 STREET                     
+## 9               &lt;NA&gt; 3067760018 EAST 14 STREET                
+## 10              &lt;NA&gt; 3008370017 56 STREET                     
 ##                         geom_poly
 ## 1  MULTIPOLYGON (((989815.4 20...
 ## 2  MULTIPOLYGON (((989815.4 20...
@@ -443,22 +456,22 @@ rpad_check %&gt;%
 ## 8  MULTIPOLYGON (((978788.9 17...
 ## 9  MULTIPOLYGON (((995507.7 16...
 ## 10 MULTIPOLYGON (((978788.9 17...</code></pre>
-<pre class="r"><code>rpad_check &lt;- rpad_check %&gt;%
-  filter(is.na(owner) &amp; str_sub(exmtcl, 1, 1) == &quot;X&quot;) %&gt;%
+<pre class="r"><code>rpad_check &lt;- rpad_check %&gt;% 
+  filter(is.na(owner) &amp; str_sub(exmtcl, 1, 1) == &quot;X&quot;) %&gt;% 
   select(any_of(c(&quot;bble&quot;, &quot;bbl&quot;, &quot;bbl_condo&quot;,  &quot;cd_rpad&quot;,
             &quot;cd&quot;, &quot;bldgcl&quot;, &quot;exmtcl&quot;,
            &quot;owner&quot;, &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;,
            &quot;zip&quot;, &quot;tot_unit&quot;, &quot;res_unit&quot;, &quot;bldgs&quot;,
            &quot;lnd_area&quot;, &quot;gr_sqft&quot;, &quot;zoning&quot;, &quot;yrb&quot;, &quot;year4&quot;,
            &quot;owner&quot;, &quot;geom_poly&quot;,
-           &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;, &quot;zip&quot;))) %&gt;%
+           &quot;hnum_lo&quot;, &quot;hnum_hi&quot;, &quot;str_name&quot;, &quot;zip&quot;))) %&gt;% 
   rename(bldgarea = gr_sqft,
          year = year4,
          ownername = owner,
-         bldgclass = bldgcl)
+         bldgclass = bldgcl) 
 
-rpad_final &lt;- rpad_filt %&gt;%
-  bind_rows(rpad_check) %&gt;%
+rpad_final &lt;- rpad_filt %&gt;% 
+  bind_rows(rpad_check) %&gt;% 
   unique()</code></pre>
 </div>
 <div id="load-2008-pluto-file-not-on-furman-database" class="section level2">
@@ -470,43 +483,43 @@ abbs &lt;- c(&quot;MN&quot;, &quot;BK&quot;, &quot;QN&quot;, &quot;BX&quot;, &qu
 
 # load 2008 data
 pluto2008 &lt;- map2_dfr(boros, abbs,
-                      ~st_read(path(inp, &quot;mappluto_08b&quot;,
-                                    &quot;mappluto_08b&quot;, .x, paste0(.y, &quot;MapPLUTO.shp&quot;))))  %&gt;%
+                      ~st_read(path(inp, &quot;mappluto_08b&quot;, 
+                                    &quot;mappluto_08b&quot;, .x, paste0(.y, &quot;MapPLUTO.shp&quot;))))  %&gt;% 
   mutate(year = 2008)</code></pre>
-<pre><code>## Reading layer `MNMapPLUTO&#39; from data source
-##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Manhattan\MNMapPLUTO.shp&#39;
+<pre><code>## Reading layer `MNMapPLUTO&#39; from data source 
+##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Manhattan\MNMapPLUTO.shp&#39; 
 ##   using driver `ESRI Shapefile&#39;
 ## Simple feature collection with 43869 features and 79 fields
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
 ## Bounding box:  xmin: 971048.7 ymin: 188447.4 xmax: 1010042 ymax: 259602
 ## Projected CRS: NAD83 / New York Long Island (ftUS)
-## Reading layer `BKMapPLUTO&#39; from data source
-##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Brooklyn\BKMapPLUTO.shp&#39;
+## Reading layer `BKMapPLUTO&#39; from data source 
+##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Brooklyn\BKMapPLUTO.shp&#39; 
 ##   using driver `ESRI Shapefile&#39;
 ## Simple feature collection with 278152 features and 79 fields
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
 ## Bounding box:  xmin: 972618.5 ymin: 146775.8 xmax: 1030465 ymax: 208563.9
 ## Projected CRS: NAD83 / New York Long Island (ftUS)
-## Reading layer `QNMapPLUTO&#39; from data source
-##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Queens\QNMapPLUTO.shp&#39;
+## Reading layer `QNMapPLUTO&#39; from data source 
+##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Queens\QNMapPLUTO.shp&#39; 
 ##   using driver `ESRI Shapefile&#39;
 ## Simple feature collection with 323096 features and 79 fields
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
 ## Bounding box:  xmin: 994600.6 ymin: 136096.3 xmax: 1067332 ymax: 231152.2
 ## Projected CRS: NAD83 / New York Long Island (ftUS)
-## Reading layer `BXMapPLUTO&#39; from data source
-##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Bronx\BXMapPLUTO.shp&#39;
+## Reading layer `BXMapPLUTO&#39; from data source 
+##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Bronx\BXMapPLUTO.shp&#39; 
 ##   using driver `ESRI Shapefile&#39;
 ## Simple feature collection with 89526 features and 79 fields
 ## Geometry type: MULTIPOLYGON
 ## Dimension:     XY
 ## Bounding box:  xmin: 1002620 ymin: 225419.1 xmax: 1049180 ymax: 272823
 ## Projected CRS: NAD83 / New York Long Island (ftUS)
-## Reading layer `SIMapPLUTO&#39; from data source
-##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Staten_Island\SIMapPLUTO.shp&#39;
+## Reading layer `SIMapPLUTO&#39; from data source 
+##   `C:\Users\jg6849\Documents\Github\nyu_ownership\01_Input\mappluto_08b\mappluto_08b\Staten_Island\SIMapPLUTO.shp&#39; 
 ##   using driver `ESRI Shapefile&#39;
 ## Simple feature collection with 122144 features and 79 fields
 ## Geometry type: MULTIPOLYGON
@@ -514,22 +527,22 @@ pluto2008 &lt;- map2_dfr(boros, abbs,
 ## Bounding box:  xmin: 913128.9 ymin: 120049 xmax: 969591.3 ymax: 175726.1
 ## Projected CRS: NAD83 / New York Long Island (ftUS)</code></pre>
 <pre class="r"><code># convert lowercase
-lowernames &lt;- names(pluto2008) %&gt;%
+lowernames &lt;- names(pluto2008) %&gt;% 
   str_to_lower()
 names(pluto2008) &lt;- lowernames
 
 # pull out assessed value
-pluto2008_assessed_value &lt;- pluto2008 %&gt;%
-  as_tibble() %&gt;%
-    rename_at(vars(starts_with(&quot;assesstot&quot;)), ~&quot;assessed_value&quot;) %&gt;%
+pluto2008_assessed_value &lt;- pluto2008 %&gt;% 
+  as_tibble() %&gt;% 
+    rename_at(vars(starts_with(&quot;assesstot&quot;)), ~&quot;assessed_value&quot;) %&gt;% 
     rename_at(vars(starts_with(&quot;cd&quot;)), ~&quot;cd&quot;) %&gt;%
-    rename_at(vars(starts_with(&quot;floorarea&quot;)), ~&quot;bldgarea&quot;) %&gt;%
-    rename_at(vars(starts_with(&quot;landuse&quot;)), ~&quot;landuse&quot;) %&gt;%
+    rename_at(vars(starts_with(&quot;floorarea&quot;)), ~&quot;bldgarea&quot;) %&gt;% 
+    rename_at(vars(starts_with(&quot;landuse&quot;)), ~&quot;landuse&quot;) %&gt;% 
     # filter for mixed commercial or commercial and office buildings
-    filter(landuse == &quot;04&quot; | landuse == &quot;05&quot;) %&gt;%
-    group_by(cd) %&gt;%
-    mutate(value_sqft = if_else(bldgarea &gt; 0, assessed_value / bldgarea, NA_real_)) %&gt;%
-    summarize(avg_value_sqft = round(mean(value_sqft, na.rm = T), 2)) %&gt;%
+    filter(landuse == &quot;04&quot; | landuse == &quot;05&quot;) %&gt;% 
+    group_by(cd) %&gt;% 
+    mutate(value_sqft = if_else(bldgarea &gt; 0, assessed_value / bldgarea, NA_real_)) %&gt;% 
+    summarize(avg_value_sqft = round(mean(value_sqft, na.rm = T), 2)) %&gt;% 
     mutate(year = 2008)
 pluto2008_assessed_value</code></pre>
 <pre><code>## # A tibble: 60 x 3
@@ -547,11 +560,11 @@ pluto2008_assessed_value</code></pre>
 ## 10   110          161.   2008
 ## # ... with 50 more rows</code></pre>
 <pre class="r"><code># filter out unncessary vars
-pluto2008_nyu &lt;- pluto2008 %&gt;%
+pluto2008_nyu &lt;- pluto2008 %&gt;% 
     filter(str_detect(ownername, &#39;^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)&#39;),
-         ownername != &#39;NYU, SOON KEAT&#39;) %&gt;%
+         ownername != &#39;NYU, SOON KEAT&#39;) %&gt;% 
     mutate(geom_poly = geometry,
-           geom_point = st_centroid(geometry)) %&gt;%
+           geom_point = st_centroid(geometry)) %&gt;% 
     select(&quot;ownername&quot;, matches(&quot;area&quot;),
            matches(&quot;cd&quot;),
            matches(&quot;assess&quot;),
@@ -559,10 +572,10 @@ pluto2008_nyu &lt;- pluto2008 %&gt;%
            matches(&quot;address&quot;), &quot;bbl&quot;,
            &quot;year&quot;,
            &quot;geom_poly&quot;,
-           &quot;geom_point&quot;) %&gt;%
-  mutate(bbl = as.character(bbl)) %&gt;%
-  st_set_geometry(&quot;geom_poly&quot;) %&gt;%
-  select(-&quot;geometry&quot;)
+           &quot;geom_point&quot;) %&gt;% 
+  mutate(bbl = as.character(bbl)) %&gt;% 
+  st_set_geometry(&quot;geom_poly&quot;) %&gt;% 
+  select(-&quot;geometry&quot;) 
 
 pluto2008_nyu</code></pre>
 <pre><code>## Simple feature collection with 101 features and 21 fields
@@ -643,29 +656,29 @@ check_extract &lt;- function(con, tblname) {
 
 extract_nyu &lt;- function(con, tblname, yr, out_path = out) {
   print(paste0(&quot;Loading table for: &quot;, tblname))
-
+  
   nyu_pluto &lt;- st_read(con, query = paste0(
     &quot;SELECT * FROM &quot;, tblname,
     &quot; WHERE (ownername ~* &#39;^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)|(NY UNIV)|(POLYTECHNIC INST)&#39;
                   AND ownername != &#39;NYU, SOON KEAT&#39;) OR bbl = &#39;1005330001&#39;&quot;
   )) %&gt;%
     mutate(year = yr)
-
+  
   lower_names &lt;- str_to_lower(names(nyu_pluto))
   names(nyu_pluto) &lt;- lower_names
-
-  nyu_pluto &lt;- nyu_pluto %&gt;%
+  
+  nyu_pluto &lt;- nyu_pluto %&gt;% 
     select(&quot;ownername&quot;, matches(&quot;area&quot;),
            matches(&quot;cd&quot;),
            matches(&quot;assess&quot;),
            matches(&quot;yearbuilt&quot;),
            matches(&quot;address&quot;),
-           matches(&quot;bldg&quot;),
+           matches(&quot;bldg&quot;), 
            matches(&quot;land&quot;), &quot;bbl&quot;,
            &quot;year&quot;,
            &quot;geom_poly&quot;,
            &quot;geom_point&quot;)
-
+    
   nyu_pluto %&gt;%
     nrow()
 
@@ -689,430 +702,430 @@ tbls[str_detect(tbls, &quot;pluto&quot;) &amp; str_detect(tbls, &quot;09&quot;)]
 years &lt;- c(2002:2007, 2009:2021)
 nyu_pluto_full &lt;- map2(tblnames, years, ~ extract_nyu(con, .x, .y))</code></pre>
 <pre><code>## [1] &quot;Loading table for: mappluto_02b&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  NEW YORK UNIV SCHOOL      2     MULTIPOLYGON (((983220 2070...    1.8
-##
-##  NEW YORK UNIV. REAL E     3     POLYGON ((985781 205569, 98...    2.7
-##
-##   NEW YORK UNIVERSITY     87     MULTIPOLYGON (((980804 1975...   79.1
-##
-##  NEW YORK UNIVERSITY S     3     POLYGON ((1006423 262000, 1...    2.7
-##
-##  NY UNIV. REAL ESTATE     13     MULTIPOLYGON (((985541 2056...   11.8
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988494 1922...    0.9
-##
-##  POLYTECHNIC INSTITUTE     1     MULTIPOLYGON (((987904 1920...    0.9
+##  NEW YORK UNIV SCHOOL      2     MULTIPOLYGON (((983220 2070...    1.8  
+## 
+##  NEW YORK UNIV. REAL E     3     POLYGON ((985781 205569, 98...    2.7  
+## 
+##   NEW YORK UNIVERSITY     87     MULTIPOLYGON (((980804 1975...   79.1  
+## 
+##  NEW YORK UNIVERSITY S     3     POLYGON ((1006423 262000, 1...    2.7  
+## 
+##  NY UNIV. REAL ESTATE     13     MULTIPOLYGON (((985541 2056...   11.8  
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988494 1922...    0.9  
+## 
+##  POLYTECHNIC INSTITUTE     1     MULTIPOLYGON (((987904 1920...    0.9  
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_03c&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  NEW YORK UNIV SCHOOL      2     MULTIPOLYGON (((983208 2071...    1.9
-##
-##  NEW YORK UNIV. REAL E     3     POLYGON ((985654 205546, 98...    2.9
-##
-##   NEW YORK UNIVERSITY     84     MULTIPOLYGON (((980804 1975...    80
-##
-##  NEW YORK UNIVERSITY S     1     MULTIPOLYGON (((1006061 261...     1
-##
-##  NY UNIV. REAL ESTATE     13     MULTIPOLYGON (((985555 2056...   12.4
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988392 1922...     1
-##
-##  POLYTECHNIC INSTITUTE     1     MULTIPOLYGON (((987904 1920...     1
+##  NEW YORK UNIV SCHOOL      2     MULTIPOLYGON (((983208 2071...    1.9  
+## 
+##  NEW YORK UNIV. REAL E     3     POLYGON ((985654 205546, 98...    2.9  
+## 
+##   NEW YORK UNIVERSITY     84     MULTIPOLYGON (((980804 1975...    80   
+## 
+##  NEW YORK UNIVERSITY S     1     MULTIPOLYGON (((1006061 261...     1   
+## 
+##  NY UNIV. REAL ESTATE     13     MULTIPOLYGON (((985555 2056...   12.4  
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988392 1922...     1   
+## 
+##  POLYTECHNIC INSTITUTE     1     MULTIPOLYGON (((987904 1920...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_04c&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  NEW YORK UNIV SCHOOL      2     MULTIPOLYGON (((983208 2071...    1.9
-##
-##  NEW YORK UNIV. REAL E     3     POLYGON ((985654 205546, 98...    2.8
-##
-##   NEW YORK UNIVERSITY     85     MULTIPOLYGON (((980795 1975...   80.2
-##
-##  NEW YORK UNIVERSITY S     1     MULTIPOLYGON (((1006061 261...    0.9
-##
-##  NY UNIV. REAL ESTATE     13     MULTIPOLYGON (((985555 2056...   12.3
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988392 1922...    0.9
-##
-##  POLYTECHNIC INSTITUTE     1     MULTIPOLYGON (((987904 1920...    0.9
+##  NEW YORK UNIV SCHOOL      2     MULTIPOLYGON (((983208 2071...    1.9  
+## 
+##  NEW YORK UNIV. REAL E     3     POLYGON ((985654 205546, 98...    2.8  
+## 
+##   NEW YORK UNIVERSITY     85     MULTIPOLYGON (((980795 1975...   80.2  
+## 
+##  NEW YORK UNIVERSITY S     1     MULTIPOLYGON (((1006061 261...    0.9  
+## 
+##  NY UNIV. REAL ESTATE     13     MULTIPOLYGON (((985555 2056...   12.3  
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988392 1922...    0.9  
+## 
+##  POLYTECHNIC INSTITUTE     1     MULTIPOLYGON (((987904 1920...    0.9  
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_05d&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##    CITY OF NEW YORK        1     MULTIPOLYGON (((984697 2046...     1
-##
-##   NEW YORK UNIVERSITY     69     MULTIPOLYGON (((980804 1975...   68.3
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984687 2043...     1
-##
-##  NEW YORK UNIVERSITYRE    17     MULTIPOLYGON (((985655 2055...   16.8
-##
-##  NEW YORK UNIVERSITYSC     5     MULTIPOLYGON (((983220 2070...     5
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985405 2069...     3
-##
-##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990148 2109...     4
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988491 1922...     1
+##    CITY OF NEW YORK        1     MULTIPOLYGON (((984697 2046...     1   
+## 
+##   NEW YORK UNIVERSITY     69     MULTIPOLYGON (((980804 1975...   68.3  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984687 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE    17     MULTIPOLYGON (((985655 2055...   16.8  
+## 
+##  NEW YORK UNIVERSITYSC     5     MULTIPOLYGON (((983220 2070...     5   
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985405 2069...     3   
+## 
+##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990148 2109...     4   
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988491 1922...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_06c&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934636 1364...     1
-##
-##    CITY OF NEW YORK        1     MULTIPOLYGON (((984697 2046...     1
-##
-##   NEW YORK UNIVERSITY     70     MULTIPOLYGON (((980804 1975...   69.3
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984511 2043...     1
-##
-##  NEW YORK UNIVERSITYRE    17     MULTIPOLYGON (((985622 2056...   16.8
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983208 2071...     3
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985387 2070...     3
-##
-##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990158 2109...     4
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988392 1922...     1
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934636 1364...     1   
+## 
+##    CITY OF NEW YORK        1     MULTIPOLYGON (((984697 2046...     1   
+## 
+##   NEW YORK UNIVERSITY     70     MULTIPOLYGON (((980804 1975...   69.3  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984511 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE    17     MULTIPOLYGON (((985622 2056...   16.8  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983208 2071...     3   
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985387 2070...     3   
+## 
+##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990158 2109...     4   
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988392 1922...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_07c&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934636 1364...     1
-##
-##   NEW YORK UNIVERSITY     71     MULTIPOLYGON (((985028 2040...   70.3
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984511 2043...     1
-##
-##  NEW YORK UNIVERSITYRE    17     MULTIPOLYGON (((985622 2056...   16.8
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983208 2071...     3
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985387 2070...     3
-##
-##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990158 2109...     4
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988392 1922...     1
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934636 1364...     1   
+## 
+##   NEW YORK UNIVERSITY     71     MULTIPOLYGON (((985028 2040...   70.3  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984511 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE    17     MULTIPOLYGON (((985622 2056...   16.8  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983208 2071...     3   
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985387 2070...     3   
+## 
+##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990158 2109...     4   
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988392 1922...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_09v2&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1
-##
-##   NEW YORK UNIVERSITY     74     MULTIPOLYGON (((984516 2040...   71.8
-##
-##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.6
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1
-##
-##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9
-##
-##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990146 2109...    3.9
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1   
+## 
+##   NEW YORK UNIVERSITY     74     MULTIPOLYGON (((984516 2040...   71.8  
+## 
+##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.6  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9  
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9  
+## 
+##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990146 2109...    3.9  
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_10v2&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1
-##
-##   NEW YORK UNIVERSITY     76     MULTIPOLYGON (((984516 2040...   72.4
-##
-##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.4
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1
-##
-##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9
-##
-##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990146 2109...    3.8
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1   
+## 
+##   NEW YORK UNIVERSITY     76     MULTIPOLYGON (((984516 2040...   72.4  
+## 
+##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.4  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9  
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9  
+## 
+##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((990146 2109...    3.8  
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_11v2&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1
-##
-##   NEW YORK UNIVERSITY     76     MULTIPOLYGON (((984516 2040...   73.8
-##
-##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.6
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1
-##
-##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9
-##
-##  NYU HOSPITALS CENTER      2     MULTIPOLYGON (((990156 2109...    1.9
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1   
+## 
+##   NEW YORK UNIVERSITY     76     MULTIPOLYGON (((984516 2040...   73.8  
+## 
+##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.6  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9  
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9  
+## 
+##  NYU HOSPITALS CENTER      2     MULTIPOLYGON (((990156 2109...    1.9  
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_12v2&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1
-##
-##   NEW YORK UNIVERSITY     73     MULTIPOLYGON (((984516 2040...   72.3
-##
-##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.9
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1
-##
-##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...     3
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...     3
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...     3
-##
-##  NYU HOSPITALS CENTER      3     MULTIPOLYGON (((991644 2093...     3
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1   
+## 
+##   NEW YORK UNIVERSITY     73     MULTIPOLYGON (((984516 2040...   72.3  
+## 
+##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.9  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...     3   
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...     3   
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...     3   
+## 
+##  NYU HOSPITALS CENTER      3     MULTIPOLYGON (((991644 2093...     3   
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_13v2&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1
-##
-##   NEW YORK UNIVERSITY     73     MULTIPOLYGON (((999725 1820...   70.9
-##
-##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.6
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1
-##
-##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9
-##
-##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((995399 1613...    3.9
-##
-##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1
-##
-##  POLYTECHNIC INSTITUTE     1     MULTIPOLYGON (((987903 1920...     1
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1   
+## 
+##   NEW YORK UNIVERSITY     73     MULTIPOLYGON (((999725 1820...   70.9  
+## 
+##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.6  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9  
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9  
+## 
+##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((995399 1613...    3.9  
+## 
+##  POLYTECHNIC INST OF B     1     MULTIPOLYGON (((988493 1921...     1   
+## 
+##  POLYTECHNIC INSTITUTE     1     MULTIPOLYGON (((987903 1920...     1   
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_14v2&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1
-##
-##   NEW YORK UNIVERSITY     77     MULTIPOLYGON (((999725 1820...   73.3
-##
-##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.4
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1
-##
-##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9
-##
-##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((995399 1613...    3.8
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1   
+## 
+##   NEW YORK UNIVERSITY     77     MULTIPOLYGON (((999725 1820...   73.3  
+## 
+##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.4  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9  
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9  
+## 
+##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((995399 1613...    3.8  
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_15v1&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1
-##
-##   NEW YORK UNIVERSITY     76     MULTIPOLYGON (((984516 2040...   73.1
-##
-##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.5
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1
-##
-##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9
-##
-##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((995399 1613...    3.8
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...     1   
+## 
+##   NEW YORK UNIVERSITY     76     MULTIPOLYGON (((984516 2040...   73.1  
+## 
+##  NEW YORK UNIVERSITY R    13     MULTIPOLYGON (((985352 2056...   12.5  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...     1   
+## 
+##  NEW YORK UNIVERSITYRE     3     POLYGON ((985738 205485, 98...    2.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.9  
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.9  
+## 
+##  NYU HOSPITALS CENTER      4     MULTIPOLYGON (((995399 1613...    3.8  
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_16v2&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...    0.9
-##
-##   NEW YORK UNIVERSITY     95     MULTIPOLYGON (((984708 2043...    88
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...    0.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.8
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.8
-##
-##  NYU HOSPITALS CENTER      5     MULTIPOLYGON (((995399 1613...    4.6
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...    0.9  
+## 
+##   NEW YORK UNIVERSITY     95     MULTIPOLYGON (((984708 2043...    88   
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...    0.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.8  
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.8  
+## 
+##  NYU HOSPITALS CENTER      5     MULTIPOLYGON (((995399 1613...    4.6  
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_17v1_1&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...    0.9
-##
-##   NEW YORK UNIVERSITY     95     MULTIPOLYGON (((984887 2037...   87.2
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...    0.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.8
-##
-##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.8
-##
-##  NYU HOSPITALS CENTER      6     MULTIPOLYGON (((995399 1613...    5.5
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...    0.9  
+## 
+##   NEW YORK UNIVERSITY     95     MULTIPOLYGON (((984887 2037...   87.2  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...    0.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.8  
+## 
+##      NY UNIVERSITY         3     MULTIPOLYGON (((985400 2069...    2.8  
+## 
+##  NYU HOSPITALS CENTER      6     MULTIPOLYGON (((995399 1613...    5.5  
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_18v2&quot;
-##
+## 
 ## ------------------------------------------------------------------------
-##        ownername         _freq             geom_poly              _perc
+##        ownername         _freq             geom_poly              _perc 
 ## ----------------------- ------- -------------------------------- -------
-##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...    0.9
-##
-##   NEW YORK UNIVERSITY     95     MULTIPOLYGON (((984887 2037...   85.6
-##
-##  NEW YORK UNIVERSITY S     1     MULTIPOLYGON (((985773 1940...    0.9
-##
-##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...    0.9
-##
-##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.7
-##
-##      NY UNIVERSITY         2     MULTIPOLYGON (((985400 2069...    1.8
-##
-##  NYU HOSPITALS CENTER      6     MULTIPOLYGON (((995399 1613...    5.4
-##
-##  NYU LANGONE HOSPITALS     2     MULTIPOLYGON (((978716 1749...    1.8
+##  ARA HOLDINGS OF NYU L     1     MULTIPOLYGON (((934624 1364...    0.9  
+## 
+##   NEW YORK UNIVERSITY     95     MULTIPOLYGON (((984887 2037...   85.6  
+## 
+##  NEW YORK UNIVERSITY S     1     MULTIPOLYGON (((985773 1940...    0.9  
+## 
+##  NEW YORK UNIVERSITY,A     1     MULTIPOLYGON (((984690 2043...    0.9  
+## 
+##  NEW YORK UNIVERSITYSC     3     MULTIPOLYGON (((983211 2070...    2.7  
+## 
+##      NY UNIVERSITY         2     MULTIPOLYGON (((985400 2069...    1.8  
+## 
+##  NYU HOSPITALS CENTER      6     MULTIPOLYGON (((995399 1613...    5.4  
+## 
+##  NYU LANGONE HOSPITALS     2     MULTIPOLYGON (((978716 1749...    1.8  
 ## ------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_19v2&quot;
-##
+## 
 ## --------------------------------------------------------------------------------
-##            ownername             _freq             geom_poly              _perc
+##            ownername             _freq             geom_poly              _perc 
 ## ------------------------------- ------- -------------------------------- -------
-##     ARA HOLDINGS OF NYU LLC        1     MULTIPOLYGON (((934624 1364...    0.9
-##
-##       NEW YORK UNIVERSITY         95     MULTIPOLYGON (((984887 2037...   82.6
-##
-##  NEW YORK UNIVERSITY SCHOOL OF     2     MULTIPOLYGON (((991645 1893...    1.7
-##         LAW FOUNDA TION
-##
-##    NEW YORK UNIVERSITY,A NY        1     MULTIPOLYGON (((984690 2043...    0.9
-##     EDUCATION CORPO RATION
-##
-##  NEW YORK UNIVERSITYSCHOOL OF      3     MULTIPOLYGON (((983211 2070...    2.6
-##         LAW FOUNDAT ION
-##
-##          NY UNIVERSITY             2     MULTIPOLYGON (((985400 2069...    1.7
-##
-##      NYU HOSPITALS CENTER          6     MULTIPOLYGON (((995399 1613...    5.2
-##
-##      NYU LANGONE HOSPITALS         5     MULTIPOLYGON (((978691 1742...    4.3
+##     ARA HOLDINGS OF NYU LLC        1     MULTIPOLYGON (((934624 1364...    0.9  
+## 
+##       NEW YORK UNIVERSITY         95     MULTIPOLYGON (((984887 2037...   82.6  
+## 
+##  NEW YORK UNIVERSITY SCHOOL OF     2     MULTIPOLYGON (((991645 1893...    1.7  
+##         LAW FOUNDA TION                                                         
+## 
+##    NEW YORK UNIVERSITY,A NY        1     MULTIPOLYGON (((984690 2043...    0.9  
+##     EDUCATION CORPO RATION                                                      
+## 
+##  NEW YORK UNIVERSITYSCHOOL OF      3     MULTIPOLYGON (((983211 2070...    2.6  
+##         LAW FOUNDAT ION                                                         
+## 
+##          NY UNIVERSITY             2     MULTIPOLYGON (((985400 2069...    1.7  
+## 
+##      NYU HOSPITALS CENTER          6     MULTIPOLYGON (((995399 1613...    5.2  
+## 
+##      NYU LANGONE HOSPITALS         5     MULTIPOLYGON (((978691 1742...    4.3  
 ## --------------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_20v1&quot;
-##
+## 
 ## --------------------------------------------------------------------------------
-##            ownername             _freq             geom_poly              _perc
+##            ownername             _freq             geom_poly              _perc 
 ## ------------------------------- ------- -------------------------------- -------
-##     ARA HOLDINGS OF NYU LLC        1     MULTIPOLYGON (((934624 1364...    0.9
-##
-##       NEW YORK UNIVERSITY         95     MULTIPOLYGON (((984887 2037...   82.6
-##
-##  NEW YORK UNIVERSITY SCHOOL OF     2     MULTIPOLYGON (((991645 1893...    1.7
-##         LAW FOUNDA TION
-##
-##    NEW YORK UNIVERSITY,A NY        1     MULTIPOLYGON (((984690 2043...    0.9
-##     EDUCATION CORPO RATION
-##
-##  NEW YORK UNIVERSITYSCHOOL OF      3     MULTIPOLYGON (((983211 2070...    2.6
-##         LAW FOUNDAT ION
-##
-##          NY UNIVERSITY             2     MULTIPOLYGON (((985400 2069...    1.7
-##
-##      NYU HOSPITALS CENTER          6     MULTIPOLYGON (((995399 1613...    5.2
-##
-##      NYU LANGONE HOSPITALS         5     MULTIPOLYGON (((978691 1742...    4.3
+##     ARA HOLDINGS OF NYU LLC        1     MULTIPOLYGON (((934624 1364...    0.9  
+## 
+##       NEW YORK UNIVERSITY         95     MULTIPOLYGON (((984887 2037...   82.6  
+## 
+##  NEW YORK UNIVERSITY SCHOOL OF     2     MULTIPOLYGON (((991645 1893...    1.7  
+##         LAW FOUNDA TION                                                         
+## 
+##    NEW YORK UNIVERSITY,A NY        1     MULTIPOLYGON (((984690 2043...    0.9  
+##     EDUCATION CORPO RATION                                                      
+## 
+##  NEW YORK UNIVERSITYSCHOOL OF      3     MULTIPOLYGON (((983211 2070...    2.6  
+##         LAW FOUNDAT ION                                                         
+## 
+##          NY UNIVERSITY             2     MULTIPOLYGON (((985400 2069...    1.7  
+## 
+##      NYU HOSPITALS CENTER          6     MULTIPOLYGON (((995399 1613...    5.2  
+## 
+##      NYU LANGONE HOSPITALS         5     MULTIPOLYGON (((978691 1742...    4.3  
 ## --------------------------------------------------------------------------------
-##
+## 
 ## [1] &quot;Loading table for: mappluto_21v3&quot;
-##
+## 
 ## --------------------------------------------------------------------------------
-##            ownername             _freq             geom_poly              _perc
+##            ownername             _freq             geom_poly              _perc 
 ## ------------------------------- ------- -------------------------------- -------
-##     ARA HOLDINGS OF NYU LLC        1     MULTIPOLYGON (((934589 1363...    0.9
-##
-##       NEW YORK UNIVERSITY         95     MULTIPOLYGON (((985092 2041...   81.2
-##
-##  NEW YORK UNIVERSITY SCHOOL OF     2     MULTIPOLYGON (((991645 1893...    1.7
-##         LAW FOUNDA TION
-##
-##    NEW YORK UNIVERSITY,A NY        1     MULTIPOLYGON (((984511 2043...    0.9
-##     EDUCATION CORPO RATION
-##
-##  NEW YORK UNIVERSITYSCHOOL OF      3     MULTIPOLYGON (((983210 2071...    2.6
-##         LAW FOUNDAT ION
-##
-##          NY UNIVERSITY             2     MULTIPOLYGON (((985400 2069...    1.7
-##
-##      NYU HOSPITALS CENTER          6     MULTIPOLYGON (((995399 1613...    5.1
-##
-##      NYU LANGONE HOSPITALS         7     MULTIPOLYGON (((978691 1742...     6
+##     ARA HOLDINGS OF NYU LLC        1     MULTIPOLYGON (((934589 1363...    0.9  
+## 
+##       NEW YORK UNIVERSITY         95     MULTIPOLYGON (((985092 2041...   81.2  
+## 
+##  NEW YORK UNIVERSITY SCHOOL OF     2     MULTIPOLYGON (((991645 1893...    1.7  
+##         LAW FOUNDA TION                                                         
+## 
+##    NEW YORK UNIVERSITY,A NY        1     MULTIPOLYGON (((984511 2043...    0.9  
+##     EDUCATION CORPO RATION                                                      
+## 
+##  NEW YORK UNIVERSITYSCHOOL OF      3     MULTIPOLYGON (((983210 2071...    2.6  
+##         LAW FOUNDAT ION                                                         
+## 
+##          NY UNIVERSITY             2     MULTIPOLYGON (((985400 2069...    1.7  
+## 
+##      NYU HOSPITALS CENTER          6     MULTIPOLYGON (((995399 1613...    5.1  
+## 
+##      NYU LANGONE HOSPITALS         7     MULTIPOLYGON (((978691 1742...     6   
 ## --------------------------------------------------------------------------------</code></pre>
 <pre class="r"><code>nyu_pluto_app &lt;- bind_rows(nyu_pluto_full, pluto2008_nyu, rpad_final)
 nyu_pluto_app</code></pre>
@@ -1213,28 +1226,28 @@ nyu_pluto_app</code></pre>
 ## 10 MULTIPOLYGON (((987404.9 20... POINT (987401.6 204449.2)</code></pre>
 <pre class="r"><code>nyu_21 &lt;- extract_nyu(con, &quot;mappluto_21v3&quot;, 2021)</code></pre>
 <pre><code>## [1] &quot;Loading table for: mappluto_21v3&quot;
-##
+## 
 ## --------------------------------------------------------------------------------
-##            ownername             _freq             geom_poly              _perc
+##            ownername             _freq             geom_poly              _perc 
 ## ------------------------------- ------- -------------------------------- -------
-##     ARA HOLDINGS OF NYU LLC        1     MULTIPOLYGON (((934589 1363...    0.9
-##
-##       NEW YORK UNIVERSITY         95     MULTIPOLYGON (((985092 2041...   81.2
-##
-##  NEW YORK UNIVERSITY SCHOOL OF     2     MULTIPOLYGON (((991645 1893...    1.7
-##         LAW FOUNDA TION
-##
-##    NEW YORK UNIVERSITY,A NY        1     MULTIPOLYGON (((984511 2043...    0.9
-##     EDUCATION CORPO RATION
-##
-##  NEW YORK UNIVERSITYSCHOOL OF      3     MULTIPOLYGON (((983210 2071...    2.6
-##         LAW FOUNDAT ION
-##
-##          NY UNIVERSITY             2     MULTIPOLYGON (((985400 2069...    1.7
-##
-##      NYU HOSPITALS CENTER          6     MULTIPOLYGON (((995399 1613...    5.1
-##
-##      NYU LANGONE HOSPITALS         7     MULTIPOLYGON (((978691 1742...     6
+##     ARA HOLDINGS OF NYU LLC        1     MULTIPOLYGON (((934589 1363...    0.9  
+## 
+##       NEW YORK UNIVERSITY         95     MULTIPOLYGON (((985092 2041...   81.2  
+## 
+##  NEW YORK UNIVERSITY SCHOOL OF     2     MULTIPOLYGON (((991645 1893...    1.7  
+##         LAW FOUNDA TION                                                         
+## 
+##    NEW YORK UNIVERSITY,A NY        1     MULTIPOLYGON (((984511 2043...    0.9  
+##     EDUCATION CORPO RATION                                                      
+## 
+##  NEW YORK UNIVERSITYSCHOOL OF      3     MULTIPOLYGON (((983210 2071...    2.6  
+##         LAW FOUNDAT ION                                                         
+## 
+##          NY UNIVERSITY             2     MULTIPOLYGON (((985400 2069...    1.7  
+## 
+##      NYU HOSPITALS CENTER          6     MULTIPOLYGON (((995399 1613...    5.1  
+## 
+##      NYU LANGONE HOSPITALS         7     MULTIPOLYGON (((978691 1742...     6   
 ## --------------------------------------------------------------------------------</code></pre>
 <pre class="r"><code>nyu_21</code></pre>
 <pre><code>## Simple feature collection with 117 features and 27 fields
@@ -1321,31 +1334,31 @@ nyu_21 %&gt;%
            append = F,
            delete_dsn = T)</code></pre>
 <pre><code>## Deleting source `03_Output/nyu_21.geojson&#39; using driver `GeoJSON&#39;
-## Writing layer `nyu_21&#39; to data source
+## Writing layer `nyu_21&#39; to data source 
 ##   `03_Output/nyu_21.geojson&#39; using driver `GeoJSON&#39;
 ## Writing 117 features with 27 fields and geometry type Multi Polygon.</code></pre>
 <pre class="r"><code>nyu_pluto_app %&gt;%
-  st_set_geometry(&quot;geom_poly&quot;) %&gt;%
-  st_transform(2263) %&gt;%
-  select(-&quot;geom_point&quot;) %&gt;%
-  select(-any_of(drop_vars)) %&gt;%
+  st_set_geometry(&quot;geom_poly&quot;) %&gt;% 
+  st_transform(2263) %&gt;% 
+  select(-&quot;geom_point&quot;) %&gt;% 
+  select(-any_of(drop_vars)) %&gt;% 
   st_write(dsn = path(out, &quot;nyu_allyrs.geojson&quot;), driver = &quot;GeoJSON&quot;,
            append = F,
            delete_dsn = T)</code></pre>
 <pre><code>## Deleting source `03_Output/nyu_allyrs.geojson&#39; using driver `GeoJSON&#39;
-## Writing layer `nyu_allyrs&#39; to data source
+## Writing layer `nyu_allyrs&#39; to data source 
 ##   `03_Output/nyu_allyrs.geojson&#39; using driver `GeoJSON&#39;
 ## Writing 2449 features with 37 fields and geometry type Unknown (any).</code></pre>
 <pre class="r"><code>nyu_pluto_app %&gt;%
-  st_set_geometry(&quot;geom_point&quot;) %&gt;%
-  st_transform(2263) %&gt;%
-  select(-&quot;geom_poly&quot;) %&gt;%
-  select(-any_of(drop_vars)) %&gt;%
+  st_set_geometry(&quot;geom_point&quot;) %&gt;% 
+  st_transform(2263) %&gt;% 
+  select(-&quot;geom_poly&quot;) %&gt;% 
+  select(-any_of(drop_vars)) %&gt;% 
   st_write(dsn = path(out, &quot;nyu_allyrs_pts.geojson&quot;), driver = &quot;GeoJSON&quot;,
            append = F,
            delete_dsn = T)</code></pre>
 <pre><code>## Deleting source `03_Output/nyu_allyrs_pts.geojson&#39; using driver `GeoJSON&#39;
-## Writing layer `nyu_allyrs_pts&#39; to data source
+## Writing layer `nyu_allyrs_pts&#39; to data source 
 ##   `03_Output/nyu_allyrs_pts.geojson&#39; using driver `GeoJSON&#39;
 ## Writing 2449 features with 37 fields and geometry type Unknown (any).</code></pre>
 <pre class="r"><code># using the function written above
@@ -1424,31 +1437,31 @@ full_check %&gt;%
 <div id="calculate-average-assessed-value-for-all-commercial-buildings-in-a-cd" class="section level2">
 <h2>Calculate average assessed value for all commercial buildings in a CD</h2>
 <pre class="r"><code>pluto_calc_assess_value &lt;- function(con, tblname, yr) {
-  tbl(con, tblname) %&gt;%
-    rename_at(vars(starts_with(&quot;assesstot&quot;)), ~&quot;assessed_value&quot;) %&gt;%
+  tbl(con, tblname) %&gt;% 
+    rename_at(vars(starts_with(&quot;assesstot&quot;)), ~&quot;assessed_value&quot;) %&gt;% 
     rename_at(vars(starts_with(&quot;cd&quot;)), ~&quot;cd&quot;) %&gt;%
-    rename_at(vars(starts_with(&quot;floorarea&quot;)), ~&quot;bldgarea&quot;) %&gt;%
-    rename_at(vars(starts_with(&quot;landuse&quot;)), ~&quot;landuse&quot;) %&gt;%
+    rename_at(vars(starts_with(&quot;floorarea&quot;)), ~&quot;bldgarea&quot;) %&gt;% 
+    rename_at(vars(starts_with(&quot;landuse&quot;)), ~&quot;landuse&quot;) %&gt;% 
     # filter for mixed commercial or commercial and office buildings
-    filter(landuse == &quot;04&quot; | landuse == &quot;05&quot;) %&gt;%
-    group_by(cd) %&gt;%
-    mutate(value_sqft = if_else(bldgarea &gt; 0, assessed_value / bldgarea, NA_real_)) %&gt;%
-    summarize(avg_value_sqft = round(mean(value_sqft, na.rm = T), 2)) %&gt;%
-    mutate(year = yr) %&gt;%
-    as_tibble()
+    filter(landuse == &quot;04&quot; | landuse == &quot;05&quot;) %&gt;% 
+    group_by(cd) %&gt;% 
+    mutate(value_sqft = if_else(bldgarea &gt; 0, assessed_value / bldgarea, NA_real_)) %&gt;% 
+    summarize(avg_value_sqft = round(mean(value_sqft, na.rm = T), 2)) %&gt;% 
+    mutate(year = yr) %&gt;% 
+    as_tibble() 
 }
 
 # calc average assessed value in commercial and mixed commercial buildings
 # by community district
 # use 2002 values for 1998-2001, since we don&#39;t have data for those years
 assessed_value_avg &lt;- map2_dfr(c(rep(tblnames[1], 4),
-                                 tblnames), c(1998:2001, years), ~pluto_calc_assess_value(con, .x, .y))
+                                 tblnames), c(1998:2001, years), ~pluto_calc_assess_value(con, .x, .y)) 
 assessed_value_avg_2008 &lt;- bind_rows(assessed_value_avg, pluto2008_assessed_value)
 
-assessed_value_avg_2008 %&gt;%
+assessed_value_avg_2008 %&gt;% 
   saveRDS(path(out, &quot;assess_value_averages.RDS&quot;))
 
-assessed_value_avg_2008 %&gt;%
+assessed_value_avg_2008 %&gt;% 
   write_csv(path(out, &quot;assess_value_averages.csv&quot;))</code></pre>
 </div>
 </div>
