@@ -180,8 +180,12 @@ rpad_geo_fix <- rpad_geo_merge %>%
   st_set_geometry("geom_point") %>% 
   group_by(bbl_condo, year) %>% 
   #if more than one per buildings etc.
-  mutate(geom_point = ifelse(n() > 1, st_jitter(geom_point, amount = 0.0002), geom_point)) %>%
-  ungroup()
+  mutate(dupl_pts = ifelse(n() > 1, 1, 0)) %>% 
+  ungroup() %>% 
+  mutate(geom_point = ifelse(dupl_pts == 1, st_jitter(geom_point, amount = 0.0002), geom_point)) %>% 
+  as_tibble() %>% 
+  st_as_sf()
+rpad_geo_fix
 
 rpad_geo_fix %>% 
   filter(st_is_empty(geom_point)) %>% 
