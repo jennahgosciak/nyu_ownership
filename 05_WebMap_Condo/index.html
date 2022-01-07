@@ -29,30 +29,22 @@
 
 </head>
 <body>      <!-- visible structure of page begins here -->
-
-  <style>
-      #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-bottom.mapboxgl-popup-anchor-bottom > div.maplibregl-popup-content.mapboxgl-popup-content > table,
-      #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-bottom.mapboxgl-popup-anchor-bottom > div.maplibregl-popup-content.mapboxgl-popup-content,
-      #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-top.mapboxgl-popup-anchor-top,
-      #map > div.maplibregl-popup.mapboxgl-popup.maplibregl-popup-anchor-top.mapboxgl-popup-anchor-top > div.maplibregl-popup-content.mapboxgl-popup-content {
-        color: 'black';
-        background-color: rgb(211, 211, 211, 0.5);
-        padding: 10px;
-        font-family: 'Lato';
-    }
-    </style>
-
     <!-- an element called 'map' -->
 		<div id="map"></div>
 
 		<div class="map-overlay top">
 			<div class="map-overlay-inner">
-				<h2 style="color:white">NYU Ownership of Land (2001-2021)</h2>
-        <h3 style="color:white">Buildings and condo units</h3>
+				<h2 style="color:white">NYU Land Ownership<br>(2001-2021)</h2>
+        <h3 style="color:white">NYU buildings and condos</h3>
 				<label style = "color: white" id="year"></label>
 				<input id="slider" type="range" min="2001" max="2021" step="1" value="2001">
 			</div>
 		</div>
+
+    <div class = "footnote">
+      <par>Data on NYU buildings and condos come from the New York City Department of Finance, Real Property Assessment Data (RPAD).<br>
+      Tax calculations are not available for the NYU buildings and condos layer.</par>
+    </div>
 
 		<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
 
