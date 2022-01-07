@@ -1,5 +1,3 @@
-'use strict'        // let the browser know we're serious
-
 // debug statement letting us know the file is loaded
 console.log('Loaded map.js')
 
@@ -58,9 +56,9 @@ map.on('load',function(){
     'type': 'circle',
     'source':'nyu_data',
     'paint': {
-      'circle-radius': 5,
+      'circle-radius': 10,
       'circle-color':  "#9057FF",
-      'circle-opacity': 0.5
+      'circle-opacity': 0.4
     },
   })
 
