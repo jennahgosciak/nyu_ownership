@@ -146,12 +146,12 @@ map.on('idle', () => {
         clickedLayer,
         'visibility',
         'visible'
-      );
-    }
-  };
+        );
+      }
+    };
 
-  const layers = document.getElementById('menu');
-  layers.appendChild(link);
+    const layers = document.getElementById('menu');
+    layers.appendChild(link);
   }
 });
 
@@ -174,7 +174,7 @@ map.once("idle", () => {
               // query the taxes
               setTimeout(100);
               document.getElementById('tax_calc').textContent = map.queryRenderedFeatures({layers: ['nyu_poly']})[0].properties.taxes_yr;
-              document.getElementById('tax_calc_title').textContent = "Estimated taxes";
+              document.getElementById('tax_calc_title').textContent = "Estimated yearly taxes (only for NYU buildings)";
             } else {
               // blank if NYU Poly not loaded
               document.getElementById('tax_calc').textContent = "";
@@ -223,7 +223,7 @@ map.on('click', 'nyu_poly', function(e) {
               <td>${bldgarea}</td>
               </tr>
               <tr>
-              <td>Estimated taxes</td>
+              <td>Estimated yearly taxes</td>
               <td>${tax}</td>
               </tr>
               </table>`)
