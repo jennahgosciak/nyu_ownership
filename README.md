@@ -1,7 +1,7 @@
 # New York City's Biggest Landowner?
 ## New York University and New York City Real Estate, 1997-2021
 
-The associated [Medium article](https://jennahgosciak.medium.com/new-york-citys-biggest-landowner-69fac98794fe).
+You can read the Medium article associated with this repository [here](https://jennahgosciak.medium.com/new-york-citys-biggest-landowner-69fac98794fe).
 
 To understand the analysis better, you can view the [methodology and data sources](https://github.com/jennahgosciak/nyu_ownership/blob/main/methodology.md).
 
