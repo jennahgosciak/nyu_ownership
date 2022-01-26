@@ -10,4 +10,4 @@ To understand the analysis better, you can view the [methodology and data source
 * [01_analysis_1998_2021.Rmd](https://github.com/jennahgosciak/nyu_ownership/blob/main/01_analysis_2001_2021.Rmd)
 * [02_analysis_acris.Rmd](https://github.com/jennahgosciak/nyu_ownership/blob/main/02_analysis_acris.Rmd)
 
-### You can view the [interactive map (with all NYU buildings and condos)](https://jennahgosciak.github.io/nyu_ownership/06_WebMap_Comb/)
+### [Interactive map (with all NYU buildings and condos)](https://jennahgosciak.github.io/nyu_ownership/06_WebMap_Comb/)
