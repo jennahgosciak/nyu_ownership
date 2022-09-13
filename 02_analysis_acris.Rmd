@@ -44,12 +44,12 @@ library(rgdal)
 
 # DB Connection
 con <- dbConnect(Postgres(),
-  user = "furmandata",
+  user = ,
   password = rstudioapi::askForPassword(),
-  host = "fcdata.c7h93yqbqnvu.us-east-1.rds.amazonaws.com",
+  host = ,
   port = 5432,
-  dbname = "fcdata",
-  bigint = "integer"
+  dbname = ,
+  bigint = 
 )
 
 source("99_common.R")
