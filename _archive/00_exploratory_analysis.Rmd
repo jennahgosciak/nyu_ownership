@@ -1,0 +1,411 @@
+---
+title: "Exploratory analysis"
+author: "Jennah Gosciak"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(inputFile,
+  encoding=encoding,
+  output_file="01_analysis.html")})
+output:
+  html_document:
+    toc: true
+    theme: paper
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = F, warning = F,
+  fig.width = 6, fig.height = 10
+)
+```
+
+```{r, setup, include = F}
+# Setup
+library(renv)
+library(tidyverse)
+library(janitor)
+library(magrittr)
+library(eeptools)
+library(assertr)
+library(readr)
+library(openxlsx)
+library(DBI)
+library(dplyr)
+library(dbplyr)
+library(RPostgres)
+library(lubridate)
+library(fs)
+library(sf)
+library(vroom)
+library(leaflet)
+library(haven)
+
+
+# DB Connection
+con <- dbConnect(Postgres(),
+  user = "",
+  password = rstudioapi::askForPassword(),
+  host = "",
+  port = ,
+  dbname = "",
+  bigint = "integer"
+)
+
+source("99_common.R")
+out <- "03_Output"
+inp <- "01_Input"
+fig_path <- path("03_Output", "figs")
+colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
+```
+
+# Analysis: 1998-2021
+
+## Load cpi conversion factors
+```{r, exp pluto}
+# load cpi from bls
+# method from: https://qrc.depaul.edu/oelguntillman/Winter12/Notes/7%20-%20CPI%20Notes.htm
+cpi <- readxl::read_xlsx(path(inp, "r-cpi-u-rs-allitems.xlsx"),
+                         skip = 5)
+cpi
+
+cpi_2020 <- cpi %>% 
+  filter(YEAR == 2020) %>% 
+  pull(AVG)
+
+conversion_factors <- cpi %>% 
+  filter(YEAR != 1977) %>% 
+  mutate(conv = cpi_2020/AVG) %>% 
+  rename(year = YEAR) %>% 
+  select(year, conv)
+
+conversion_factors
+```
+Calculate average assessed value for all commercial buildings in a CD
+```{r}
+pluto_calc_assess_value <- function(con, tblname, yr) {
+  tbl(con, tblname) %>% 
+    rename_at(vars(starts_with("assesstot")), ~"assessed_value") %>% 
+    rename_at(vars(starts_with("cd")), ~"cd") %>%
+    rename_at(vars(starts_with("floorarea")), ~"bldgarea") %>% 
+    rename_at(vars(starts_with("landuse")), ~"landuse") %>% 
+    # filter for mixed commercial or commercial and office buildings
+    filter(landuse == "04" | landuse == "05") %>% 
+    group_by(cd) %>% 
+    mutate(value_sqft = if_else(bldgarea > 0, assessed_value / bldgarea, NA_real_)) %>% 
+    summarize(avg_value_sqft = round(mean(value_sqft, na.rm = T), 2)) %>% 
+    mutate(year = yr) %>% 
+    as_tibble() 
+}
+
+# calc average assessed value in commercial and mixed commercial buildings
+# by community district
+# use 2002 values for 1998-2001, since we don't have data for those years
+assessed_value_avg <- map2_dfr(c(rep(tblnames[1], 4),
+                                 tblnames), c(1998:2001, years), ~pluto_calc_assess_value(con, .x, .y))
+
+assessed_value_avg %>% 
+  saveRDS(path(out, "assess_value_averages.RDS"))
+```
+
+## NYU Assess Value Analysis
+```{r}
+nyu_pluto_app %>%
+  left_join(conversion_factors, by = "year")
+```
+
+```{r}
+nyu_assess_value <- nyu_pluto_app %>%
+  left_join(conversion_factors, by = "year") %>% 
+  mutate(cd = if_else(is.na(cd), cd2, cd)) %>% 
+  left_join(assessed_value_avg, by = c("cd", "year")) %>% 
+  rowwise() %>%
+  mutate(assessed_value_orig = max_noinf(assesstotl, 
+                                   assesstota, 
+                                   assesstot)) %>% 
+  ungroup() %>% 
+  mutate(bldgarea = if_else(is.na(bldgarea), floorarea, as.double(bldgarea))) %>%
+  mutate(assessed_value = bldgarea * avg_value_sqft) 
+
+nyu_assess_value
+%>% 
+  ungroup() %>%
+  mutate(assessed_adj = if_else(year < 2021, round(assessed_value * conv),
+                                assessed_value)) %>% 
+  st_set_geometry("geom_point") %>%
+  st_transform(4326) %>%
+  select(c(
+    "ownername", "year", "assessed_adj",
+    "lotarea", "bldgarea", "floorarea", "geom_point", "cd",
+    "address", "bbl", "borough",
+  ), starts_with("assess"), matches("area"), -"geom_poly") %>% 
+  mutate(borough = recode(borough, "BK" = "Brooklyn", "MN" = "Manhattan",
+                          "BX" = "Bronx", "SI" = "Staten Island",
+                          "QN" = "Queens"))
+nyu_assess_value %>%
+  st_write(
+    dsn = path(
+      fig_path,
+      "nyu_filt.geojson"
+    ), driver = "GeoJSON",
+    append = F,
+    delete_dsn = T
+  )
+```
+## Assessed value over time
+```{r}
+# assess value over time
+nyu_assess_value %>% 
+  group_by(borough, year) %>%
+  summarize(avg_assessed_value = mean(assessed_value, na.rm = T)/1000) %>% 
+  ggplot() +
+  geom_line(aes(year, avg_assessed_value, color = borough)) +
+  #scale_y_continuous(limits = c(0, 2000)) +
+  theme_classic() +
+  labs(x = "Year",
+       y = "Average assessed value in thousands") +
+  scale_color_manual(values = colors,
+                     name = "Borough")
+
+ggsave(path(fig_path, "assess_value1.png"))
+
+nyu_assess_value %>% 
+  group_by(borough, year) %>%
+  filter(borough != "MN") %>% 
+  summarize(avg_assessed_value = mean(assessed_value, na.rm = T)/1000) %>% 
+  ggplot() +
+  geom_line(aes(year, avg_assessed_value, color = borough)) +
+  theme_classic() +
+  labs(x = "Year",
+       y = "Average assessed value in thousands") +
+  scale_color_manual(values = colors,
+                     name = "Borough")
+ggsave(path(fig_path, "assess_value2.png"))
+
+nyu_assess_value %>% 
+  group_by(borough, year) %>%
+  summarize(avg_assessed_value = mean(assessed_value_orig, na.rm = T)/1000) %>% 
+  ggplot() +
+  geom_line(aes(year, avg_assessed_value, color = borough)) +
+  theme_classic() +
+  labs(x = "Year",
+       y = "Average assessed value in thousands") +
+  scale_color_manual(values = colors,
+                     name = "Borough")
+
+ggsave(path(fig_path, "assess_value2.png"))
+```
+## Analysis of square footage (building or floor square footage)
+```{r}
+nyu_area <- nyu_pluto_app %>% 
+  mutate(bldgarea = if_else(is.na(bldgarea), floorarea, as.double(bldgarea))) %>% 
+  as_tibble() %>% 
+  verify(!is.na(bldgarea)) %>% 
+  group_by(borough, cd, year) %>%
+  summarize(bldgarea_total = sum(bldgarea, na.rm = T)) %>% 
+  group_by(borough, year) %>%
+  mutate(bldgarea_total_boro = sum(bldgarea_total, na.rm = T)) %>% 
+  rowwise() %>%
+  mutate(bldgarea_share = round(bldgarea_total * 100 / bldgarea_total_boro)) %>% 
+  ungroup() %>% 
+  mutate(across(c("bldgarea_total", "bldgarea_total_boro"), ~./1000)) %>% 
+  mutate(borough = recode(borough, "BK" = "Brooklyn", "MN" = "Manhattan",
+                          "BX" = "Bronx", "SI" = "Staten Island",
+                          "QN" = "Queens"))
+
+nyu_area %>% 
+  select(c("borough", "year", "bldgarea_total_boro")) %>% 
+  unique() %>% 
+  ggplot() +
+  geom_line(aes(year, bldgarea_total_boro, color = borough)) +
+  theme_classic() +
+  labs(x = "Year",
+       y = "Square feet in thousands") +
+  scale_color_manual(values = colors)
+ggsave(path(fig_path, "area_1.pdf"))
+
+nyu_area %>% 
+  filter(borough == "Manhattan" | borough == "Brooklyn") %>% 
+  select(c("borough", "year", "bldgarea_total_boro")) %>% 
+  unique() %>% 
+  ggplot() +
+  geom_line(aes(year, bldgarea_total_boro, color = borough)) +
+  theme_classic() +
+  labs(x = "Year",
+       y = "Square feet in thousands") +
+  scale_color_manual(values = colors)
+ggsave(path(fig_path, "area_2.pdf"))
+```
+
+```{r}
+# investigating dip in square footage
+nyu_pluto_app %>% 
+  filter(year == 2012) %>% 
+  as_tibble() %>% 
+  anti_join(nyu_pluto_app %>%
+              filter(year == 2015) %>% 
+              as_tibble(), by = "bbl") %>% 
+  select(c("bbl"), everything())
+
+tbl(con, "mappluto_12v2") %>% 
+  filter(bbl == "1005400024") %>% 
+  select(c("ownername"), everything())
+
+tbl(con, "mappluto_15v1") %>% 
+  filter(bbl == "1005400024") %>% 
+  select(c("ownername", "bldgarea"), everything())
+```
+
+
+
+
+# interactive map in leaflet
+```{r}
+map_interactive <- nyu_pluto_app %>%
+  st_transform(4326) %>%
+  leaflet() %>%
+  addProviderTiles(provider = "CartoDB.Positron")
+map_interactive
+```
+
+# Load deed data from Acris
+```{r}
+tbl(con, "acris_document_control_codes") %>% 
+  filter(class_code_description == 'DEEDS AND OTHER CONVEYANCES')
+
+## Load acris data, deed records
+nyu_acris <- dbGetQuery(con, paste0("SELECT p.*, m.*, l.property_type,
+                  l.street_number, l.street_name, l.aptno, l.bbl FROM acris_parties as p
+                  INNER JOIN acris_master as m on (p.document_id = m.document_id)
+                  LEFT JOIN acris_document_control_codes as d on (m.doc_type = d.doc_type)
+                  LEFT JOIN acris_legals as l on (p.document_id = l.document_id)
+                  WHERE p.name ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)'
+                  AND p.name NOT IN ('NYU, SOON KEAT',
+                                  'OK NYU PARK, AS ADMINISTRATOR OF ESTATE',
+                                  'YOON, SOOK NYU CHUNG')"))
+nyu_acris
+
+nyu_acris %>%
+  tablist_qc(name)
+
+nyu_acris_filt <- nyu_acris %>%
+  filter(doc_type != "EASE") %>% 
+  arrange(desc(doc_date)) %>% 
+  select(c("doc_date","bbl"), everything()) %>% 
+  mutate(apt = case_when(!is.na(aptno) ~ 1,
+                         TRUE ~ 0))
+
+nyu_acris_filt %>% 
+  mutate(doc_type = str_trim(doc_type)) %>% 
+  select(c("doc_type", "document_id")) %>% 
+  unique() %>% 
+  group_by(doc_type) %>% 
+  summarize(count = n()) %>% 
+  filter(count > 0) %>% 
+  arrange(-count)
+```
+
+Number of documents over time
+```{r}
+nyu_acris_filt %>% 
+  filter(!is.na(doc_date)) %>% 
+  select(c("document_id", "doc_date")) %>% 
+  unique() %>% 
+  group_by(doc_date) %>% 
+  mutate(count = n()) %>% 
+  arrange(-count)
+
+nyu_acris_filt %>% 
+  select(c("document_id", "doc_date")) %>% 
+  unique() %>% 
+  group_by(doc_date) %>% 
+  mutate(count = n()) %>% 
+  ggplot() +
+  geom_line(aes(doc_date, count)) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0,40)) +
+  scale_x_date(date_labels = "%Y",
+               date_breaks = "10 years",
+               limit = c(as.Date("1963-01-01"), as.Date("2021-01-01"))) +
+  labs(y = "Number of documents",
+       x = "Date")
+
+nyu_acris_filt  %>% 
+  select(c("document_id", "doc_date")) %>%
+  unique() %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
+  group_by(doc_year) %>% 
+  summarize(count = n()) %>% 
+  ggplot() +
+  geom_line(aes(doc_year, count)) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0,600)) +
+  scale_x_continuous(limits = c(1960, 2021),
+                  breaks = seq(1960, 2021, 10)) +
+  labs(y = "Number of documents",
+       x = "Year")
+
+nyu_acris_filt  %>% 
+  select(c("document_id", "doc_date", "doc_type")) %>%
+  unique() %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
+  group_by(doc_year, doc_type) %>% 
+  summarize(count = n()) %>% 
+  ggplot() +
+  geom_line(aes(doc_year, count, fill = doc_type)) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0,600)) +
+  scale_x_continuous(limits = c(1960, 2021),
+                  breaks = seq(1960, 2021, 10)) +
+  labs(y = "Number of documents",
+       x = "Year")
+```
+```{r}
+copy_to(con, nyu_acris_filt,
+  name = "nyu_acris_filt", overwrite = T,
+  temporary = T
+)
+
+nyu_acris_pluto <- tbl(con, "nyu_acris_filt") %>% 
+  left_join(tbl(con, "mappluto_21v3"), by = "bbl") %>% 
+  as_tibble()
+
+nyu_acris_clean <- nyu_acris_pluto %>% 
+  mutate(nyu_role = case_when(party_type == 2 ~ "Buyer",
+                              party_type == 1 ~ "Seller",
+                              TRUE ~ NA_character_))  %>% 
+  mutate(appdate = mdy(appdate)) %>% 
+  rowwise() %>% 
+  mutate(max_date = max(doc_date, assessment_date, modified_date,
+                        appdate, na.rm = T),
+         min_date = min(doc_date, assessment_date, 
+                        modified_date, appdate,
+                        na.rm = T)) %>% 
+  select(c("document_id", "bbl", "street_number", "street_name", "city", "zip",
+           "nyu_role", "doc_date", "doc_type", "min_date", "max_date",
+           "name", "address"))
+
+nyu_acris_clean %>% 
+  filter(document_id == "FT_1650000478165")
+
+tbl(con, "acris_legals") %>% 
+  filter(bbl == "1000510015") %>% 
+  inner_join(tbl(con, "acris_parties"), by = "document_id") %>% 
+  inner_join(tbl(con, "acris_master"), by = "document_id") %>% 
+  filter(modified_date < as.Date("1990-01-01")) %>% 
+  select(c("doc_type"), everything()) %>% 
+```
+
+
+## Geocode deed records
+```{r}
+library(geoclient)
+geoclient_api_key(key = "8023630502244bbbb65e9090d28c2615", overwrite = T, install = T)
+
+
+
+geocode <- nyu_acris %>% 
+  mutate(address_form = str_c(paste(street_number, street_name), 
+                              city, state, zip, sep = ", ")) %>% 
+  geo_search_data(address_form)
+geocode
+```
+

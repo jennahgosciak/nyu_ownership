@@ -1,0 +1,217 @@
+---
+title: "Analysis of ACRIS data"
+author: "Jennah Gosciak"
+date: "`r format(Sys.Date(), '%B %d, %Y')`"
+knit: (function(inputFile, encoding) { 
+  rmarkdown::render(inputFile,
+  encoding=encoding,
+  output_file="02_analysis_acris.html")})
+output:
+  html_document:
+    toc: true
+    theme: paper
+---
+```{r, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE, message = F, warning = F,
+  fig.width = 6, fig.height = 10
+)
+```
+
+```{r, setup, include = F}
+# Setup
+library(renv)
+library(tidyverse)
+library(janitor)
+library(magrittr)
+library(eeptools)
+library(assertr)
+library(readr)
+library(openxlsx)
+library(DBI)
+library(dplyr)
+library(dbplyr)
+library(RPostgres)
+library(lubridate)
+library(fs)
+library(sf)
+library(vroom)
+library(leaflet)
+library(viridis)
+library(ggmap)
+library(basemaps)
+library(rgdal)
+
+# DB Connection
+con <- dbConnect(Postgres(),
+  user = "",
+  password = rstudioapi::askForPassword(),
+  host = "",
+  port = ,
+  dbname = "",
+  bigint = "integer"
+)
+
+source("99_common.R")
+out <- "03_Output"
+inp <- "01_Input"
+fig_path <- path(out, "figs")
+
+colors <- c("#512e92","#e03616","#758ecd", "#FFC857","#0b5351")
+```
+
+# Load deed data from Acris
+```{r}
+tbl(con, "acris_document_control_codes") %>% 
+  filter(class_code_description == 'DEEDS AND OTHER CONVEYANCES')
+
+## Load acris data, deed records
+nyu_acris <- dbGetQuery(con, paste0("SELECT p.*, m.*, l.property_type,
+                  l.street_number, l.street_name, l.aptno, l.bbl FROM acris_parties as p
+                  INNER JOIN acris_master as m on (p.document_id = m.document_id)
+                  LEFT JOIN acris_document_control_codes as d on (m.doc_type = d.doc_type)
+                  LEFT JOIN acris_legals as l on (p.document_id = l.document_id)
+                  WHERE p.name ~* '^(NYU)$|(\\sNYU,?\\s)|(NEW YORK UNIV.+)|^(NYU,?\\s)'
+                  AND p.name NOT IN ('NYU, SOON KEAT',
+                                  'OK NYU PARK, AS ADMINISTRATOR OF ESTATE',
+                                  'YOON, SOOK NYU CHUNG')"))
+
+nyu_acris_filt <- nyu_acris %>%
+  filter(doc_type != "EASE") %>% 
+  arrange(desc(doc_date)) %>% 
+  select(c("doc_date","bbl"), everything()) %>% 
+  mutate(apt = case_when(!is.na(aptno) ~ 1,
+                         TRUE ~ 0)) %>% 
+  filter(name != "KEAT NYU, SOON")
+
+nyu_acris %>%
+  tablist_qc(name)
+
+nyu_acris %>%
+  tablist_qc(doc_type)
+
+nyu_acris %>%
+  tablist_qc(party_type)
+
+nyu_acris_filt %>% 
+  mutate(doc_type = str_trim(doc_type)) %>% 
+  select(c("doc_type", "document_id")) %>% 
+  unique() %>% 
+  group_by(doc_type) %>% 
+  summarize(count = n()) %>% 
+  filter(count > 0) %>% 
+  arrange(-count)
+
+nyu_acris_filt %>% 
+  saveRDS(path(out, "nyu_acris.RDS"))
+```
+
+Number of documents over time
+```{r}
+nyu_acris_filt  <- readRDS(path(out, "nyu_acris.RDS"))
+
+nyu_acris_filt %>% 
+  filter(!is.na(doc_date)) %>% 
+  select(c("document_id", "doc_date")) %>% 
+  unique() %>% 
+  group_by(doc_date) %>% 
+  mutate(count = n()) %>% 
+  arrange(-count) %>% 
+  head(10)
+
+# create summary table
+nyu_acris_filt %>% 
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  pivot_longer("party_type", names_to = "party", values_to = "party_value") %>% 
+  mutate(sale_type = if_else(party_value == 2, "Buying",
+                             "Selling")) %>% 
+  select(c("document_id", "doc_date", "sale_type")) %>% 
+  unique() %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>% 
+  group_by(doc_year, sale_type) %>% 
+  summarize(count = n()) %>% 
+  arrange(-count) %>% 
+  head(10)
+
+# number of deeds, split by selling vs. buying
+nyu_acris_filt %>% 
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  pivot_longer("party_type", names_to = "party", values_to = "party_value") %>% 
+  mutate(sale_type = if_else(party_value == 2, "Buying",
+                             "Selling")) %>% 
+  rowwise() %>% 
+  mutate(doc_date_mod = min(doc_date, recorded_filed, modified_date, na.rm = T)) %>% 
+  ungroup() %>% 
+  select(c("document_id", "doc_date_mod", "sale_type")) %>% 
+  verify(!is.na(doc_date_mod)) %>% 
+  unique() %>%  
+  mutate(doc_year = as.numeric(format(doc_date_mod, "%Y"))) %>% 
+  group_by(doc_year, sale_type) %>% 
+  summarize(count = n()) %>% 
+  ggplot() +
+  geom_line(aes(doc_year, count, color = sale_type)) +
+  theme_classic() +
+  scale_y_continuous(limits = c(0,75)) +
+  scale_x_continuous(limits = c(1960, 2021),
+                  breaks = seq(1960, 2021, 10)) +
+  labs(y = "Number of documents",
+       x = "Year") +
+  scale_color_manual(values = colors[1:2])
+
+ggsave(path(fig_path, "sale_property.pdf"))
+
+# more exploratory/investigative work
+nyu_acris_filt %>% 
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>%
+  filter(doc_year == 2007) %>% 
+  select(c("street_number", "street_name", "zip", "bbl")) %>% 
+  unique()
+
+nyu_acris_filt %>% 
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  mutate(doc_year = as.numeric(format(doc_date, "%Y"))) %>%
+  filter(doc_year == 1984) %>% 
+  select(c("street_number", "street_name", "zip", "bbl")) %>% 
+  unique()
+
+# checking missing records
+nyu_acris_filt %>% 
+  filter(doc_type == "DEED") %>% 
+  verify(party_type %in% c(1, 2)) %>% 
+  filter(is.na(doc_date)) %>% 
+  head(10)
+```
+
+```{r}
+copy_to(con, nyu_acris_filt,
+  name = "nyu_acris_filt", overwrite = T,
+  temporary = T
+)
+
+## attempt to get spatial info
+nyu_acris_geo <- st_read(con, query = "SELECT a.*, r.bbl_unit,
+                                          m21.geom_poly as geom1,
+                                          m2.geom_poly as geom2 FROM nyu_acris_filt as a
+                                          LEFT JOIN rpad_condo_xwalk as r on (a.bbl = r.bbl_unit)
+                        LEFT JOIN mappluto_21v3 as m21 on (coalesce(a.bbl, r.bbl_unit) = m21.bbl)
+                        LEFT JOIN mappluto_02b as m2 on (coalesce(a.bbl, r.bbl_unit) = m2.bbl)")
+
+nyu_acris_geo %>% 
+  select(c("bbl")) %>% 
+  unique() %>% 
+  filter(!st_is_empty(geom1)) %>% 
+  nrow()
+
+nyu_acris_geo %>% 
+  st_set_geometry("geom2") %>% 
+  select(c("bbl")) %>% 
+  unique() %>% 
+  filter(!st_is_empty(geom2)) %>% 
+  nrow()
+```
+

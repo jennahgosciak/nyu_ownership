@@ -1,0 +1,55 @@
+<!DOCTYPE html> <!-- let the browser know this is an HTML file -->
+
+<html>      <!-- everything else is enclosed in html tags -->
+<head>      <!-- the head is for metadata prior to building the page -->
+
+    <!-- define the character set -->
+    <meta charset='utf-8' />
+
+    <!-- the title of the page which will show up in the browser bar -->
+    <title>Mapping NYU's Ownership of Land</title>
+
+    <!-- discourage the browser from caching the page -->
+    <meta http-equiv='Cache-Control' content='no-cache, no-store, must-revalidate' />
+    <meta http-equiv='Pragma' content='no-cache' />
+    <meta http-equiv='Expires' content='0' />
+
+    <!-- tells mobile devices how to scale the page -->
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <!-- stylesheet links -->
+    <link
+       href="https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.css"
+       rel="stylesheet"
+    />
+    <link href='css/styles.css' rel='stylesheet' />
+
+    <!-- javascript links -->
+    <script src="https://unpkg.com/maplibre-gl@1.15.2/dist/maplibre-gl.js"></script>
+
+</head>
+<body>      <!-- visible structure of page begins here -->
+
+    <!-- add menu -->
+    <nav id="menu"></nav>
+    <!-- an element called 'map' -->
+		<div id="map"></div>
+
+		<div class="map-overlay top">
+			<div class="map-overlay-inner">
+				<h2 style="color:white">NYU Land Ownership (2001-2021)</h2>
+				<label style = "color: white" id="year"></label>
+				<input id="slider" type="range" min="2001" max="2021" step="1" value="2001">
+        <h3 style="color:white" id="tax_calc_title"></h3>
+        <label style = "color: white" id="tax_calc"></label>
+        <par>Data on </par>
+			</div>
+		</div>
+
+		<script src="https://d3js.org/d3.v3.min.js" charset="utf-8"></script>
+
+    <!-- load additional javascript -->
+    <script src='js/scripts.js'></script>
+
+</body>
+</html>
