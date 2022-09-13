@@ -174,7 +174,11 @@ map.once("idle", () => {
               // query the taxes
               setTimeout(100);
               document.getElementById('tax_calc').textContent = map.queryRenderedFeatures({layers: ['nyu_poly']})[0].properties.taxes_yr;
+<<<<<<< HEAD
               document.getElementById('tax_calc_title').textContent = "Estimated yearly taxes (only for NYU buildings)";
+=======
+              document.getElementById('tax_calc_title').textContent = "Estimated yearly taxes for NYU buildings";
+>>>>>>> 392b0c565fa56fc07d550c54ea31860ee7fb53e3
             } else {
               // blank if NYU Poly not loaded
               document.getElementById('tax_calc').textContent = "";

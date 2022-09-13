@@ -15,6 +15,33 @@ img {
     width: 300px;
 }
 
+.footnote {
+  font: 12px 'Helvetica Neue', Arial, Helvetica, sans-serif;;
+  position: absolute;
+  width: 350px;
+  bottom: 30px;
+  left: 0;
+  padding: 10px;
+}
+
+par {
+  font-size: 12px;
+  color: #FFFFFF;
+}
+
+br {
+   display: block;
+   margin: 10px 0;
+   content:" ";
+}
+
+.maplibregl-popup {
+  color: 'black';
+  background-color: rgb(211, 211, 211, 0.5);
+  padding: 10px;
+  font-family: 'Lato';
+}
+
 .map-overlay {
 font: 16px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
 position: absolute;
@@ -23,7 +50,6 @@ top: 0;
 left: 0;
 padding: 10px;
 }
-
 
 .map-overlay .map-overlay-inner {
 background-color: rgba(24, 24, 24, 0.5);

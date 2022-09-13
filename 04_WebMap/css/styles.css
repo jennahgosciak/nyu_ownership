@@ -15,6 +15,34 @@ img {
     width: 300px;
 }
 
+.maplibregl-popup {
+  color: 'black';
+  background-color: rgb(211, 211, 211, 0.5);
+  padding: 10px;
+  font-family: 'Lato';
+}
+
+.footnote {
+  font: 12px 'Helvetica Neue', Arial, Helvetica, sans-serif;;
+  position: absolute;
+  width: 350px;
+  bottom: 30px;
+  left: 0;
+  padding: 10px;
+}
+
+par {
+  font-size: 12px;
+  color: #FFFFFF;
+}
+
+br {
+   display: block;
+   margin: 10px 0;
+   content:" ";
+}
+
+
 .map-overlay {
 font: 16px/20px 'Helvetica Neue', Arial, Helvetica, sans-serif;
 position: absolute;

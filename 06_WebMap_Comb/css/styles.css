@@ -24,35 +24,53 @@ left: 0;
 padding: 10px;
 }
 
+.footnote {
+  font: 12px 'Helvetica Neue', Arial, Helvetica, sans-serif;;
+  position: absolute;
+  width: 350px;
+  bottom: 30px;
+  left: 0;
+  padding: 10px;
+}
+
+par {
+  font-size: 12px;
+  color: #FFFFFF;
+}
+
+br {
+   display: block;
+   margin: 10px 0;
+   content:" ";
+}
 
 .map-overlay .map-overlay-inner {
-background-color: rgba(24, 24, 24, 0.5);
-box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
-border-radius: 3px;
-padding: 10px;
-margin-bottom: 10px;
+  background-color: rgba(24, 24, 24, 0.5);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+  padding: 10px;
+  margin-bottom: 10px;
 }
 
 .map-overlay h2 {
-line-height: 24px;
-display: block;
-margin: 0 0 10px;
+  line-height: 24px;
+  display: block;
+  margin: 0 0 10px;
 }
 
-
 .map-overlay .legend .bar {
-height: 10px;
-width: 100%;
-background: linear-gradient(to right, #fca107, #7f3121);
+  height: 10px;
+  width: 100%;
+  background: linear-gradient(to right, #fca107, #7f3121);
 }
 
 .map-overlay {
-background-color: transparent;
-display: inline-block;
-width: 350px;
-position: relative;
-margin: 0;
-cursor: ew-resize;
+  background-color: transparent;
+  display: inline-block;
+  width: 350px;
+  position: relative;
+  margin: 0;
+  cursor: ew-resize;
 }
 
 .maplibregl-popup {
@@ -80,26 +98,26 @@ cursor: ew-resize;
 
 /*Menu for different layers*/
 #menu {
-background: rgba(0, 0, 0, 0.2);
-position: absolute;
-z-index: 1;
-top: 10px;
-right: 10px;
-border-radius: 3px;
-width: 200px;
-font-family: 'Helvetica Neue', sans-serif;
+  background: rgba(0, 0, 0, 0.2);
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  right: 10px;
+  border-radius: 3px;
+  width: 200px;
+  font-family: 'Helvetica Neue', sans-serif;
 }
 
 #menu a {
-font-size: 16px;
-color: #FFFFFF;
-display: block;
-margin: 0;
-padding: 0;
-padding: 10px;
-text-decoration: none;
-border-bottom: 1px solid rgba(0, 0, 0, 0.25);
-text-align: center;
+  font-size: 16px;
+  color: #FFFFFF;
+  display: block;
+  margin: 0;
+  padding: 0;
+  padding: 10px;
+  text-decoration: none;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.25);
+  text-align: center;
 }
 
 #menu a:last-child {
