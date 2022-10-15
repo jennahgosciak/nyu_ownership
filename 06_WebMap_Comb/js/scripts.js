@@ -187,7 +187,12 @@ map.once("idle", () => {
 
 /* only for Polygon Data */
 // when the user does a 'click' on an element in the polygon data
-map.on('click', 'nyu_poly', function(e) {
+map.on('click', 'nyu_poly', function (e) {
+  let f = map.queryRenderedFeatures(e.point);
+  if (f[0]['layer']['id'] != 'nyu_poly') {
+    return;
+  } 
+
   // get the map coordinates of the feature
   var coordinates = e.features[0].geometry.coordinates.slice();
   // get information from feature attributes
@@ -242,7 +247,7 @@ map.on('mouseleave', 'nyu_poly', function() {
 
 /* only for Point Data */
 // when the user does a 'click' on an element in the nyu point layer
-map.on('click', 'nyu_pt', function(e) {
+map.on('click', 'nyu_pt', function (e) {
   // get the map coordinates of the feature
   var coordinates = e.features[0].geometry.coordinates.slice();
   // get its species name from the feature's attributes
